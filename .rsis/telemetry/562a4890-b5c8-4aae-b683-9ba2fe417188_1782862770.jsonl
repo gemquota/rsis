@@ -1,0 +1,6 @@
+{"type": "l2_start", "path": null, "delta": null, "duration_ms": null, "timestamp": "2026-06-30T23:39:25.759097+00:00", "goal": "fix error handling"}
+{"type": "l2_candidate", "path": null, "delta": null, "duration_ms": null, "timestamp": "2026-06-30T23:39:25.759441+00:00", "attempt": 1, "target_files": ["stub.py"], "description": "Stub improvement: fix error handling"}
+{"type": "l2_evaluation", "path": null, "delta": null, "duration_ms": null, "timestamp": "2026-06-30T23:39:25.930272+00:00", "attempt": 1, "decision": "PASS", "score_avg": 1.0}
+{"type": "l2_complete", "path": null, "delta": null, "duration_ms": null, "timestamp": "2026-06-30T23:39:26.021083+00:00", "success": true, "attempts": 1}
+{"type": "l1_start", "path": null, "delta": null, "duration_ms": null, "timestamp": "2026-06-30T23:39:26.031373+00:00", "task": "fix error handling"}
+{"type": "l1_complete", "path": null, "delta": null, "duration_ms": 0, "timestamp": "2026-06-30T23:39:26.032984+00:00", "success": true, "steps": 1}

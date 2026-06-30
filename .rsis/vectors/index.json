@@ -17,6 +17,24 @@
         },
         "goal": "optimize imports"
       }
+    },
+    {
+      "id": 1,
+      "text": "applied: Stub improvement: fix error handling",
+      "metadata": {
+        "node_id": "improvement-1",
+        "files": [
+          "stub.py"
+        ],
+        "scores": {
+          "correctness": 1.0,
+          "safety": 1.0,
+          "efficiency": 1.0,
+          "style": 1.0,
+          "regression": 1.0
+        },
+        "goal": "fix error handling"
+      }
     }
   ]
 }
