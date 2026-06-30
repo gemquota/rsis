@@ -1,0 +1,6 @@
+{"type": "l2_start", "path": null, "delta": null, "duration_ms": null, "timestamp": "2026-06-30T23:39:31.390218+00:00", "goal": "add logging"}
+{"type": "l2_candidate", "path": null, "delta": null, "duration_ms": null, "timestamp": "2026-06-30T23:39:31.390625+00:00", "attempt": 1, "target_files": ["stub.py"], "description": "Stub improvement: add logging"}
+{"type": "l2_evaluation", "path": null, "delta": null, "duration_ms": null, "timestamp": "2026-06-30T23:39:31.557556+00:00", "attempt": 1, "decision": "PASS", "score_avg": 1.0}
+{"type": "l2_complete", "path": null, "delta": null, "duration_ms": null, "timestamp": "2026-06-30T23:39:31.627852+00:00", "success": true, "attempts": 1}
+{"type": "l1_start", "path": null, "delta": null, "duration_ms": null, "timestamp": "2026-06-30T23:39:31.629414+00:00", "task": "add logging"}
+{"type": "l1_complete", "path": null, "delta": null, "duration_ms": 0, "timestamp": "2026-06-30T23:39:31.629643+00:00", "success": true, "steps": 1}

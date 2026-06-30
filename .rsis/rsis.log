@@ -35,3 +35,12 @@
 2026-07-01 09:39:31,557 [INFO] rsis.loop_l2: L2 candidate approved on attempt 1
 2026-07-01 09:39:31,559 [INFO] rsis.loop_l2: Applying improvement: Stub improvement: add logging
 2026-07-01 09:39:31,560 [INFO] rsis.loop_l2:   Would write to: stub.py
+2026-07-01 09:39:31,627 [INFO] rsis.checkpoint: Checkpoint created: 63e7150f8640 — rsis-checkpoint: l2-applied-1-Stub improvement: add logging [2026-06-30T23:39:31+00:00]
+2026-07-01 09:39:31,628 [INFO] rsis.memory: Recorded improvement-2 — applied
+2026-07-01 09:39:31,629 [INFO] rsis.loop_l1: L1 executing task: add logging
+2026-07-01 09:39:31,629 [INFO] rsis.loop_l1: L1 task complete after 1 steps
+2026-07-01 09:39:37,002 [INFO] rsis.telemetry: Telemetry collector started (session=0d9695a1)
+2026-07-01 09:39:37,004 [INFO] rsis.memory: KG loaded (3 nodes, 0 edges)
+2026-07-01 09:39:37,005 [INFO] rsis.memory: Vector store loaded (3 documents)
+2026-07-01 09:39:37,006 [INFO] rsis.loop_l2: L2 session starting — goal: optimize imports
+2026-07-01 09:39:37,006 [INFO] rsis.loop_l2: L2 attempt 1/5
