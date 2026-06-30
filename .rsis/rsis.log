@@ -2,3 +2,8 @@
 2026-07-01 09:38:30,879 [INFO] rsis.telemetry: Telemetry collector started (session=1447ca96)
 2026-07-01 09:38:30,880 [INFO] rsis.loop_l2: L2 session starting — goal: optimize
 2026-07-01 09:38:30,881 [INFO] rsis.loop_l2: L2 attempt 1/5
+2026-07-01 09:38:30,963 [INFO] rsis.checkpoint: Checkpoint created: 1b9176d25c34 — rsis-checkpoint: l2-candidate-1 [2026-06-30T23:38:30+00:00]
+2026-07-01 09:38:30,964 [INFO] rsis.evaluator: Submitting candidate to evaluator: Stub improvement: optimize
+2026-07-01 09:38:31,047 [INFO] rsis.loop_l2: L2 candidate approved on attempt 1
+2026-07-01 09:38:31,049 [INFO] rsis.loop_l2: Applying improvement: Stub improvement: optimize
+2026-07-01 09:38:31,050 [INFO] rsis.loop_l2:   Would write to: stub.py
