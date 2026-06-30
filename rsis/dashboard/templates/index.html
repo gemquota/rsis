@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block content %}
+<header>
+    <h1>RSIS <small>Recursive Self-Improvement System</small></h1>
+    <nav>
+        <a href="/">Dashboard</a>
+        <a href="/api/status" target="_blank">API</a>
+    </nav>
+</header>
+
+<!-- Top-level stats -->
+<div class="grid">
+    <div class="card">
+        <div class="label">Knowledge Graph</div>
+        <div class="value">{{ kg_nodes }}</div>
+        <div class="sub">{{ kg_edges }} edges</div>
+    </div>
+    <div class="card">
+        <div class="label">Vector Store</div>
+        <div class="value">{{ vec_docs }}</div>
+        <div class="sub">semantic documents</div>
+    </div>
+    <div class="card">
+        <div class="label">Sessions</div>
+        <div class="value">{{ velocity.total_sessions }}</div>
+        <div class="sub">{{ velocity.total_improvements }} improvement sessions</div>
+    </div>
+    <div class="card">
+        <div class="label">Success Rate</div>
+        <div class="value {% if velocity.success_rate and velocity.success_rate > 0.5 %}good{% else %}warn{% endif %}">
+            {% if velocity.success_rate %}
+                {{ "%.0f"|format(velocity.success_rate * 100) }}%
+            {% else %}N/A{% endif %}
+        </div>
+        <div class="sub">avg {{ velocity.avg_attempts or "?" }} attempts/session</div>
+    </div>
+    <div class="card">
+        <div class="label">Optimal L2 Budget</div>
+        <div class="value">{{ optimal_iters }}</div>
+        <div class="sub">recommended max iterations</div>
+    </div>
+    <div class="card">
+        <div class="label">Strategies</div>
+        <div class="value">{{ strategies|length }}</div>
+        <div class="sub">evolved meta-strategies</div>
+    </div>
+</div>
+
+<!-- Trends -->
+{% if trends %}
+<div class="card" style="margin-bottom: 1.5rem;">
+    <h2>Detected Trends</h2>
+    <table>
+        <thead>
+            <tr><th>Context</th><th>Trend</th><th>Slope</th><th>Score</th></tr>
+        </thead>
+        <tbody>
+            {% for t in trends %}
+            <tr>
+                <td>{{ t.context }}</td>
+                <td><span class="badge {{ t.trend }}">{{ t.trend }}</span></td>
+                <td>{{ t.slope }}</td>
+                <td>{{ t.current_score }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- Recent Insights -->
+<div class="grid" style="grid-template-columns: 1fr 1fr;">
+    <div class="card">
+        <h2>Recent Insights</h2>
+        {% if recent_insights %}
+            {% for ins in recent_insights %}
+            <div class="insight-item">
+                <div>{{ ins.description or ins.id }}</div>
+                <div class="meta">{{ ins.timestamp or '' }}</div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="insight-item" style="color: #8b949e;">No insights yet — run an improvement session.</div>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2>Strategies</h2>
+        {% if strategies %}
+            {% for s in strategies %}
+            <div class="insight-item">
+                <div>{{ s.description }}</div>
+                <div class="meta">cycle {{ s.cycle or '?' }}</div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="insight-item" style="color: #8b949e;">No strategies evolved yet.</div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Session History -->
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>Session History</h2>
+    <table>
+        <thead>
+            <tr><th>Session</th><th>Type</th><th>Events</th><th>Timestamp</th></tr>
+        </thead>
+        <tbody>
+            {% for s in sessions %}
+            <tr>
+                <td style="font-family: monospace; font-size: 0.75rem;">{{ s.session_id[:12] }}...</td>
+                <td><span class="badge {{ s.type|lower }}">{{ s.type }}</span></td>
+                <td>{{ s.event_count }}</td>
+                <td>{{ s.timestamp[:19] if s.timestamp else '' }}</td>
+            </tr>
+            {% endfor %}
+            {% if not sessions %}
+            <tr><td colspan="4" style="color: #8b949e; text-align: center;">No sessions yet.</td></tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Semantic Search -->
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>Semantic Search</h2>
+    <div class="search-box">
+        <input type="text" name="q" placeholder="Search past improvements..."
+               hx-get="/api/search" hx-trigger="keyup changed delay:300ms"
+               hx-target="#search-results" hx-include="[name='q']">
+    </div>
+    <div id="search-results">
+        <div class="insight-item" style="color: #8b949e;">Type to search...</div>
+    </div>
+</div>
+{% endblock %}

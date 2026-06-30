@@ -1,19 +1,24 @@
 """L3 — Cross-Session Evolution Loop.
 
 The outermost loop: consolidates memory into the knowledge graph,
-derives meta-strategies, prunes redundant code paths, evolves
-L2 improvement heuristics, and reports cross-session trends.
+derives meta-strategies from session history, prunes redundant code
+paths, evolves L2 improvement heuristics, and generates reports.
 
-Phase 1: structural skeleton with logging. Full implementation in Phase 2.
+Phase 2/3: full implementation with memory consolidation, strategy
+evolution, redundancy refinement, and telemetry extrapolation.
 """
 
+import json
 import logging
 import time
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 
 from rsis.config import CONFIG
-from rsis.memory import MemoryManager
+from rsis.extrapolation import TelemetryExtrapolator
+from rsis.memory import KnowledgeGraph, MemoryManager
 from rsis.telemetry import TelemetryCollector, TelemetryEvent
 
 logger = logging.getLogger(__name__)
@@ -24,13 +29,15 @@ class L3Result:
     """Outcome of an L3 evolution cycle."""
     success: bool
     sessions_analysed: int = 0
+    insights_added: int = 0
     strategies_evolved: list[str] = field(default_factory=list)
-    patterns_pruned: int = 0
+    redundancies_pruned: int = 0
+    trends_detected: list[dict] = field(default_factory=list)
     error: Optional[str] = None
 
 
 class L3EvolutionLoop:
-    """Cross-session evolution loop."""
+    """Cross-session evolution loop with full memory consolidation."""
 
     def __init__(
         self,
@@ -40,63 +47,237 @@ class L3EvolutionLoop:
         self.config = CONFIG.l3
         self.telemetry = telemetry
         self.memory = memory or MemoryManager(CONFIG.workspace_dir)
-        self._session_count = 0
+        self.extrapolator = TelemetryExtrapolator()
+        self._cycle_count = 0
 
     def run_cycle(self) -> L3Result:
-        """Run one L3 evolution cycle."""
-        logger.info("L3 evolution cycle starting")
+        """Run one L3 evolution cycle with all consolidation steps."""
+        logger.info("L3 evolution cycle %d starting", self._cycle_count + 1)
 
         self.telemetry.record(TelemetryEvent(
-            event_type="l3_start", metadata={},
+            event_type="l3_start", metadata={"cycle": self._cycle_count},
         ))
 
-        self._session_count += 1
+        self._cycle_count += 1
+        insights_added = 0
+        strategies: list[str] = []
+        redundancies = 0
+        trends: list[dict] = []
 
-        # 1. Consolidate memory into knowledge graph
-        insights = self._consolidate_memory()
+        try:
+            # Phase 1: Analyse telemetry for trends
+            trends = self._detect_trends()
 
-        # 2. Derive meta-strategies
-        strategies = self._derive_strategies(insights)
+            # Phase 2: Consolidate memory into knowledge graph
+            insights_added = self._consolidate_memory(trends)
 
-        # 3. Check for plateau (stub)
-        if self._session_count >= self.config.plateau_sessions:
-            self._trigger_redundancy_refinement()
+            # Phase 3: Derive and evolve meta-strategies
+            strategies = self._evolve_strategies(insights_added, trends)
 
-        # 4. Report
+            # Phase 4: Redundancy refinement
+            redundancies = self._refine_redundancies()
+
+            logger.info(
+                "L3 cycle complete: %d insights, %d strategies, %d redundancies pruned",
+                insights_added, len(strategies), redundancies,
+            )
+
+        except Exception as e:
+            logger.exception("L3 evolution failed")
+            self.telemetry.record(TelemetryEvent(
+                event_type="l3_error", metadata={"error": str(e)},
+            ))
+            return L3Result(success=False, error=str(e))
+
         self.telemetry.record(TelemetryEvent(
             event_type="l3_complete",
             metadata={
-                "session_count": self._session_count,
-                "insights": len(insights),
+                "cycle": self._cycle_count,
+                "insights": insights_added,
                 "strategies": len(strategies),
+                "redundancies": redundancies,
+                "trends": len(trends),
             },
         ))
 
         return L3Result(
             success=True,
-            sessions_analysed=self._session_count,
+            sessions_analysed=self._cycle_count,
+            insights_added=insights_added,
             strategies_evolved=strategies,
+            redundancies_pruned=redundancies,
+            trends_detected=trends,
         )
 
-    def _consolidate_memory(self) -> list[dict]:
-        """Consolidate recent telemetry into the knowledge graph."""
-        # In production: aggregate telemetry files, extract patterns,
-        # add insight nodes to the KG.
-        recent = self.memory.kg.get_insights(limit=5)
-        logger.info("Consolidated %d recent insights", len(recent))
-        return recent
+    # ── Phase 1: Trend Detection ───────────────────────────────────
 
-    def _derive_strategies(self, insights: list[dict]) -> list[str]:
-        """Derive meta-strategies from session history."""
-        # In production: analyze success/failure patterns and generate
-        # strategy refinements for L2 improvement heuristics.
+    def _detect_trends(self) -> list[dict]:
+        """Detect regression and improvement trends from telemetry."""
+        trends = self.extrapolator.detect_regression_trends()
+        for t in trends:
+            logger.info("Trend detected: %(context)s — %(trend)s (slope=%(slope)s)", t)
+
+            # Record significant trends in KG
+            if t["trend"] == "regression" and t["severity"] == "high":
+                self.memory.kg.add_node(
+                    node_id=f"trend-{self._cycle_count}-{len(trends)}",
+                    node_type="insight",
+                    description=f"Regression in {t['context']}: slope={t['slope']}",
+                    context=t["context"],
+                    slope=t["slope"],
+                    severity=t["severity"],
+                    detected_at=datetime.now(timezone.utc).isoformat(),
+                )
+
+        return trends
+
+    # ── Phase 2: Memory Consolidation ───────────────────────────────
+
+    def _consolidate_memory(self, trends: list[dict]) -> int:
+        """Consolidate recent session data into the knowledge graph.
+
+        Analyses telemetry events and extracts patterns/insights,
+        storing them as KG nodes with appropriate relationships.
+        """
+        sessions = self.extrapolator.get_sessions()
+        recent = sessions[-5:] if len(sessions) > 5 else sessions
+        count = 0
+
+        for session in recent:
+            if session["type"] not in ("L2", "L3"):
+                continue
+
+            # Extract key events
+            events = session["events"]
+            l2_results = [e for e in events if e.get("type") == "l2_complete"]
+            eval_events = [e for e in events if e.get("type") == "l2_evaluation"]
+
+            # Create session summary insight
+            if l2_results or eval_events:
+                successes = sum(
+                    1 for e in eval_events
+                    if e.get("metadata", {}).get("decision") == "PASS"
+                )
+                total = len(eval_events)
+
+                outcome = f"{successes}/{total} evaluations passed"
+                node_id = f"session-{session['session_id'][:8]}"
+
+                self.memory.kg.add_node(
+                    node_id=node_id,
+                    node_type="insight",
+                    description=f"Session {session['session_id'][:8]}: {outcome}",
+                    session_id=session["session_id"],
+                    success_rate=successes / max(total, 1),
+                    event_count=session["event_count"],
+                    timestamp=session["timestamp"],
+                )
+                count += 1
+
+                # Connect to trends if relevant
+                for t in trends:
+                    self.memory.kg.add_edge(
+                        node_id, f"trend-{self._cycle_count}-{trends.index(t)}",
+                        rel="exhibits_trend",
+                    )
+
+        # Also consolidate vector store - compute similar patterns
+        # (vector store is already populated by L2 calls, just log status)
+        vec_count = len(self.memory.vectors._documents)
+        logger.info("Vector store has %d documents", vec_count)
+
+        return count
+
+    # ── Phase 3: Strategy Evolution ─────────────────────────────────
+
+    def _evolve_strategies(self, insights_added: int, trends: list[dict]) -> list[str]:
+        """Derive and evolve meta-strategies for L2 improvement heuristics.
+
+        Strategies are stored as KG nodes with type='strategy' and inform
+        future L2 session behaviour.
+        """
         strategies = []
-        if insights:
-            strategies.append("Continue current approach")
+        existing = self.memory.kg.get_strategies()
+        recent_improvements = self.memory.kg.get_insights(limit=5)
+
+        # Strategy 1: Budget adjustment based on pass rates
+        optimal_iters = self.extrapolator.predict_optimal_iterations()
+        strategy_id = f"strategy-budget-{self._cycle_count}"
+        self.memory.kg.add_node(
+            node_id=strategy_id,
+            node_type="strategy",
+            description=f"Optimal L2 iterations: {optimal_iters}",
+            optimal_iterations=optimal_iters,
+            cycle=self._cycle_count,
+        )
+        strategies.append(f"budget={optimal_iters}")
+
+        # Strategy 2: Focus areas from trends
+        regressions = [t for t in trends if t["trend"] == "regression"]
+        if regressions:
+            areas = ", ".join(t["context"] for t in regressions[:3])
+            strategy_id2 = f"strategy-focus-{self._cycle_count}"
+            self.memory.kg.add_node(
+                node_id=strategy_id2,
+                node_type="strategy",
+                description=f"Focus improvement on: {areas}",
+                target_areas=[t["context"] for t in regressions[:3]],
+                cycle=self._cycle_count,
+            )
+            strategies.append(f"focus={areas}")
+
+        # Strategy 3: Link new strategies to previous ones
+        if existing:
+            prev = existing[-1]
+            self.memory.kg.add_edge(
+                strategy_id, prev["id"], rel="evolves_from",
+            )
+
         return strategies
 
-    def _trigger_redundancy_refinement(self) -> None:
-        """Prune redundant code paths and strategies."""
-        logger.info("Plateau detected — triggering redundancy refinement")
-        # In production: identify duplicate code, unused improvements,
-        # and prune them.
+    # ── Phase 4: Redundancy Refinement ──────────────────────────────
+
+    def _refine_redundancies(self) -> int:
+        """Identify and prune redundant improvement patterns.
+
+        Returns count of redundancies identified (actual pruning is
+        gated — requires human approval in autonomous mode).
+        """
+        candidates = self.extrapolator.find_redundancy_candidates(self.memory.kg)
+        pruned = 0
+
+        for c in candidates:
+            logger.info(
+                "Redundancy candidate: %s — similarity=%.2f",
+                c["file"], c["similarity"],
+            )
+
+            # Record in KG
+            self.memory.kg.add_node(
+                node_id=f"redundancy-{self._cycle_count}-{pruned}",
+                node_type="insight",
+                description=f"Redundant patterns in {c['file']} "
+                            f"({', '.join(c['descriptions'])})",
+                file=c["file"],
+                similarity=c["similarity"],
+                improvement_ids=c["improvement_ids"],
+            )
+
+            # Link redundant improvements
+            for imp_id in c["improvement_ids"]:
+                self.memory.kg.add_edge(
+                    f"redundancy-{self._cycle_count}-{pruned}",
+                    imp_id, rel="flags_as_redundant",
+                )
+
+            pruned += 1
+
+        # Pruning is logged but not automatically executed
+        # (actual file pruning requires human approval)
+        if pruned > 0:
+            logger.info(
+                "Identified %d redundancy candidates (not auto-pruned)",
+                pruned,
+            )
+
+        return pruned

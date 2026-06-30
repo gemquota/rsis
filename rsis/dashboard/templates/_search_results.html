@@ -1,0 +1,15 @@
+{% if results %}
+    {% for r in results %}
+    <div class="insight-item">
+        <div>{{ r.text }}</div>
+        <div class="meta">
+            score: {{ "%.3f"|format(r.score) if r.score is defined else 'N/A' }}
+            {% if r.metadata and r.metadata.files %}
+            &middot; files: {{ r.metadata.files|join(', ') }}
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="insight-item" style="color: #8b949e;">No results found.</div>
+{% endif %}

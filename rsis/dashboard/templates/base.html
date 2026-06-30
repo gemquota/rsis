@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSIS Dashboard</title>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #0f1117;
+            color: #e1e4e8;
+            padding: 2rem;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 2rem; padding-bottom: 1rem;
+            border-bottom: 1px solid #21262d;
+        }
+        h1 { font-size: 1.5rem; font-weight: 600; color: #f0f6fc; }
+        h1 small { font-size: 0.875rem; color: #8b949e; font-weight: 400; margin-left: 0.5rem; }
+        h2 { font-size: 1rem; font-weight: 600; color: #f0f6fc; margin-bottom: 0.75rem; }
+        .grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem; margin-bottom: 1.5rem;
+        }
+        .card {
+            background: #161b22; border: 1px solid #21262d; border-radius: 8px;
+            padding: 1.25rem;
+        }
+        .card .label { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.05em; }
+        .card .value { font-size: 1.75rem; font-weight: 700; color: #f0f6fc; margin-top: 0.25rem; }
+        .card .value.good { color: #3fb950; }
+        .card .value.warn { color: #d29922; }
+        .card .value.bad { color: #f85149; }
+        .card .sub { font-size: 0.75rem; color: #8b949e; margin-top: 0.25rem; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+        th { text-align: left; padding: 0.5rem 0.75rem; color: #8b949e; font-weight: 500;
+             border-bottom: 1px solid #21262d; }
+        td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #161b22; }
+        .badge {
+            display: inline-block; padding: 0.125rem 0.5rem; border-radius: 999px;
+            font-size: 0.75rem; font-weight: 500;
+        }
+        .badge.pass { background: #3fb95020; color: #3fb950; }
+        .badge.fail { background: #f8514920; color: #f85149; }
+        .badge.regression { background: #f8514920; color: #f85149; }
+        .badge.improving { background: #3fb95020; color: #3fb950; }
+        .badge.medium { background: #d2992220; color: #d29922; }
+        .badge.positive { background: #3fb95020; color: #3fb950; }
+        input[type="text"] {
+            background: #0f1117; border: 1px solid #30363d; border-radius: 6px;
+            padding: 0.5rem 0.75rem; color: #e1e4e8; font-size: 0.875rem; width: 100%;
+            outline: none;
+        }
+        input[type="text"]:focus { border-color: #58a6ff; }
+        nav { display: flex; gap: 1rem; align-items: center; }
+        nav a { color: #58a6ff; text-decoration: none; font-size: 0.875rem; }
+        nav a:hover { text-decoration: underline; }
+        .search-box { margin-bottom: 1.5rem; }
+        .stat-row { display: flex; justify-content: space-between; padding: 0.25rem 0;
+                    font-size: 0.8125rem; }
+        .stat-row .stat-label { color: #8b949e; }
+        .stat-row .stat-value { color: #e1e4e8; font-weight: 500; }
+        .insight-item { padding: 0.5rem 0; border-bottom: 1px solid #161b22; font-size: 0.8125rem; }
+        .insight-item:last-child { border: none; }
+        .insight-item .meta { color: #8b949e; font-size: 0.75rem; margin-top: 0.125rem; }
+        footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #21262d;
+                 font-size: 0.75rem; color: #484f58; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {% block content %}{% endblock %}
+        <footer>RSIS v0.1.0 &mdash; Recursive Self-Improvement System</footer>
+    </div>
+</body>
+</html>
