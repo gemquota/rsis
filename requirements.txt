@@ -1,0 +1,14 @@
+# RSIS — Recursive Self-Improvement System
+# Core dependencies (minimal for Phase 1)
+
+# Optional: resource monitoring
+psutil>=5.9.0
+
+# Optional: vector store (Phase 2+)
+# chromadb>=0.4.0
+
+# Optional: knowledge graph (Phase 2+)
+# networkx>=3.0
+
+# Development
+pytest>=7.0.0
