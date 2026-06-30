@@ -132,18 +132,27 @@ class WorkspaceMonitor:
         except ImportError:
             logger.warning("psutil not available — resource monitoring disabled")
 
-    def cpu_usage(self) -> float:
+    def cpu_usage(self) -> Optional[float]:
         if self._psutil:
-            return self._psutil.cpu_percent(interval=0.1)
-        return 0.0
+            try:
+                return self._psutil.cpu_percent(interval=0.1)
+            except Exception:
+                return None
+        return None
 
-    def memory_usage_mb(self) -> float:
+    def memory_usage_mb(self) -> Optional[float]:
         if self._psutil:
-            proc = self._psutil.Process()
-            return proc.memory_info().rss / (1024 * 1024)
-        return 0.0
+            try:
+                proc = self._psutil.Process()
+                return proc.memory_info().rss / (1024 * 1024)
+            except Exception:
+                return None
+        return None
 
-    def disk_usage_pct(self, path: str = ".") -> float:
+    def disk_usage_pct(self, path: str = ".") -> Optional[float]:
         if self._psutil:
-            return self._psutil.disk_usage(path).percent
-        return 0.0
+            try:
+                return self._psutil.disk_usage(path).percent
+            except Exception:
+                return None
+        return None

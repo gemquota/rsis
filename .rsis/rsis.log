@@ -1,1 +1,5 @@
 2026-07-01 07:35:53,738 [INFO] rsis.checkpoint: Initialising git repository at /data/data/com.termux/files/home/dev/codex/rrp+/rsis
+2026-07-01 07:35:53,875 [INFO] rsis.checkpoint: Checkpoint created: 78a648e3b977 — rsis-checkpoint: rsis-initialised [2026-06-30T21:35:53+00:00]
+2026-07-01 07:36:25,351 [INFO] rsis.telemetry: Telemetry collector started (session=dbb1d37b)
+2026-07-01 07:36:25,352 [INFO] rsis.loop_l2: L2 session starting — goal: test the improvement loop
+2026-07-01 07:36:25,353 [INFO] rsis.loop_l2: L2 attempt 1/5

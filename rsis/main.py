@@ -29,13 +29,14 @@ def setup_logging() -> None:
     if log_path:
         Path(log_path).parent.mkdir(parents=True, exist_ok=True)
 
+    handlers = [logging.StreamHandler(sys.stdout)]
+    if log_path:
+        handlers.append(logging.FileHandler(log_path))
+
     logging.basicConfig(
         level=getattr(logging, CONFIG.log_level.upper(), logging.INFO),
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        handlers=[
-            logging.FileHandler(log_path) if log_path else logging.StreamHandler(),
-            logging.StreamHandler(sys.stdout),
-        ] if log_path else [logging.StreamHandler(sys.stdout)],
+        handlers=handlers,
     )
 
 
@@ -143,6 +144,15 @@ def cmd_evolve(args: argparse.Namespace) -> int:
     return 0
 
 
+def _fmt(val: object, unit: str = "") -> str:
+    """Format an optional value for display."""
+    if val is None:
+        return "N/A"
+    if isinstance(val, float):
+        return f"{val:.1f}{unit}"
+    return f"{val}{unit}"
+
+
 def cmd_status(args: argparse.Namespace) -> int:
     """Show system status."""
     print(f"RSIS v{__version__}")
@@ -173,9 +183,9 @@ def cmd_status(args: argparse.Namespace) -> int:
 
     # Resource monitor
     monitor = WorkspaceMonitor()
-    print(f"  CPU usage: {monitor.cpu_usage():.1f}%")
-    print(f"  Memory: {monitor.memory_usage_mb():.0f} MB")
-    print(f"  Disk: {monitor.disk_usage_pct(CONFIG.workspace_dir):.1f}%")
+    print(f"  CPU usage: {_fmt(monitor.cpu_usage(), '%')}")
+    print(f"  Memory: {_fmt(monitor.memory_usage_mb(), ' MB')}")
+    print(f"  Disk: {_fmt(monitor.disk_usage_pct(CONFIG.workspace_dir), '%')}")
 
     return 0
 
