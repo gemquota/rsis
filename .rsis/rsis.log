@@ -1,0 +1,4 @@
+2026-07-01 09:38:30,275 [INFO] rsis.checkpoint: Checkpoint created: c96013339176 — rsis-checkpoint: rsis-initialised [2026-06-30T23:38:30+00:00]
+2026-07-01 09:38:30,879 [INFO] rsis.telemetry: Telemetry collector started (session=1447ca96)
+2026-07-01 09:38:30,880 [INFO] rsis.loop_l2: L2 session starting — goal: optimize
+2026-07-01 09:38:30,881 [INFO] rsis.loop_l2: L2 attempt 1/5
