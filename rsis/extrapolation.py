@@ -11,13 +11,24 @@ import json
 import logging
 import statistics
 from collections import defaultdict
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
 from rsis.config import CONFIG
 
 logger = logging.getLogger(__name__)
+
+
+def _get(ev: dict, *keys: str, default: Any = None) -> Any:
+    """Get a possibly nested key from an event dict.
+
+    Telemetry metadata is spread at the root level (via **metadata unpacking
+    in TelemetryEvent.to_dict()), so we access directly.
+    """
+    for key in keys:
+        if key in ev:
+            return ev[key]
+    return default
 
 
 class TelemetryExtrapolator:
@@ -47,7 +58,7 @@ class TelemetryExtrapolator:
                 logger.warning("Failed to parse %s: %s", fpath.name, e)
 
         self._cache = events
-        logger.info("Loaded %d telemetry events from %s", len(events), self.telemetry_dir)
+        logger.info("Loaded %d telemetry events", len(events))
         return events
 
     # ── Session analysis ─────────────────────────────────────────────
@@ -55,36 +66,45 @@ class TelemetryExtrapolator:
     def get_sessions(self) -> list[dict]:
         """Group telemetry events into sessions."""
         events = self.load_events()
-        sessions: dict[str, list[dict]] = defaultdict(list)
+
+        # Session IDs are embedded in event metadata (telemetry uses
+        # session-level IDs stored in the filename). We reconstruct
+        # by proximity — events close in time belong to the same session.
+        sessions: list[dict] = []
+        current: list[dict] = []
 
         for ev in events:
-            session_id = ev.get("metadata", {}).get("session_id") or \
-                         ev.get("session_id", "unknown")
-            sessions[session_id].append(ev)
+            etype = ev.get("type", "")
+            if etype in ("l2_start", "l3_start") and current:
+                sessions.append(self._build_session(current))
+                current = []
+            current.append(ev)
 
-        result = []
-        for sid, evts in sessions.items():
-            # Determine session type from events
-            l2_starts = [e for e in evts if e.get("type") == "l2_start"]
-            l3_starts = [e for e in evts if e.get("type") == "l3_start"]
+        if current:
+            sessions.append(self._build_session(current))
 
-            if l3_starts:
-                session_type = "L3"
-            elif l2_starts:
-                session_type = "L2"
-            else:
-                session_type = "L1"
+        return sessions
 
-            result.append({
-                "session_id": sid,
-                "type": session_type,
-                "events": evts,
-                "event_count": len(evts),
-                "timestamp": evts[0].get("timestamp", ""),
-            })
+    def _build_session(self, events: list[dict]) -> dict:
+        """Build a session summary from a list of events."""
+        if not events:
+            return {"session_id": "unknown", "type": "?", "events": [], "event_count": 0}
 
-        result.sort(key=lambda s: s["timestamp"])
-        return result
+        etype = "L1"
+        for ev in events:
+            t = ev.get("type", "")
+            if t.startswith("l3_"):
+                etype = "L3"
+            elif t.startswith("l2_"):
+                etype = "L2"
+
+        return {
+            "session_id": f"session-{events[0].get('timestamp', '?')[:19]}",
+            "type": etype,
+            "events": events,
+            "event_count": len(events),
+            "timestamp": events[0].get("timestamp", ""),
+        }
 
     # ── L2 budget prediction ────────────────────────────────────────
 
@@ -96,19 +116,16 @@ class TelemetryExtrapolator:
         if not eval_events:
             return CONFIG.l2.max_improvement_attempts
 
-        # Analyse: at what attempt number did evaluations typically pass?
         pass_attempts = []
         for ev in eval_events:
-            if ev.get("metadata", {}).get("decision") == "PASS":
-                attempt = ev.get("metadata", {}).get("attempt", 0)
-                if attempt > 0:
+            if _get(ev, "decision") == "PASS":
+                attempt = _get(ev, "attempt", default=0)
+                if attempt and attempt > 0:
                     pass_attempts.append(attempt)
 
         if not pass_attempts:
-            # If nothing passed, recommend more attempts
             return min(CONFIG.l2.max_improvement_attempts + 2, 10)
 
-        # Use median + 1 as recommended budget
         median_attempt = int(statistics.median(pass_attempts))
         return max(median_attempt + 1, 3)
 
@@ -123,17 +140,16 @@ class TelemetryExtrapolator:
             return []
 
         trends = []
-        # Group by file or goal
         by_context: dict[str, list[float]] = defaultdict(list)
         for ev in eval_events:
-            ctx = ev.get("metadata", {}).get("goal", "default")
-            score = ev.get("metadata", {}).get("score_avg", 0.5)
-            by_context[ctx].append(score)
+            ctx = _get(ev, "goal", "description", default="default")
+            score = _get(ev, "score_avg", default=0.5)
+            if isinstance(score, (int, float)):
+                by_context[ctx].append(float(score))
 
         for ctx, scores in by_context.items():
             if len(scores) < 3:
                 continue
-            # Linear regression slope approximation
             n = len(scores)
             xs = list(range(n))
             mean_x = statistics.mean(xs)
@@ -167,18 +183,14 @@ class TelemetryExtrapolator:
         candidates = []
         improvements = memory_kg.query(node_type="improvement")
 
-        # Group by target files
         by_file: dict[str, list[dict]] = defaultdict(list)
         for imp in improvements:
             for f in imp.get("target_files", []):
                 by_file[f].append(imp)
 
-        # Files with many improvements might have redundant ones
         for fpath, imps in by_file.items():
             if len(imps) > 3:
-                # Check for similar descriptions
                 descriptions = [i.get("description", "") for i in imps]
-                # Simple similarity: shared words
                 for i in range(len(descriptions)):
                     for j in range(i + 1, len(descriptions)):
                         words_i = set(descriptions[i].lower().split())
@@ -193,7 +205,6 @@ class TelemetryExtrapolator:
                                     "descriptions": [descriptions[i], descriptions[j]],
                                 })
 
-        # Deduplicate
         seen = set()
         unique = []
         for c in candidates:
@@ -222,7 +233,7 @@ class TelemetryExtrapolator:
         total_attempts = 0
         for s in improvements:
             evals = [e for e in s["events"] if e.get("type") == "l2_evaluation"]
-            successes += sum(1 for e in evals if e.get("metadata", {}).get("decision") == "PASS")
+            successes += sum(1 for e in evals if _get(e, "decision") == "PASS")
             total_attempts += len(evals)
 
         return {
