@@ -30,3 +30,8 @@
 2026-07-01 09:39:31,389 [INFO] rsis.memory: Vector store loaded (2 documents)
 2026-07-01 09:39:31,389 [INFO] rsis.loop_l2: L2 session starting — goal: add logging
 2026-07-01 09:39:31,390 [INFO] rsis.loop_l2: L2 attempt 1/5
+2026-07-01 09:39:31,483 [INFO] rsis.checkpoint: Checkpoint created: 53e20f0b19a9 — rsis-checkpoint: l2-candidate-1 [2026-06-30T23:39:31+00:00]
+2026-07-01 09:39:31,484 [INFO] rsis.evaluator: Submitting candidate to evaluator: Stub improvement: add logging
+2026-07-01 09:39:31,557 [INFO] rsis.loop_l2: L2 candidate approved on attempt 1
+2026-07-01 09:39:31,559 [INFO] rsis.loop_l2: Applying improvement: Stub improvement: add logging
+2026-07-01 09:39:31,560 [INFO] rsis.loop_l2:   Would write to: stub.py
