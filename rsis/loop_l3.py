@@ -156,7 +156,7 @@ class L3EvolutionLoop:
             if l2_results or eval_events:
                 successes = sum(
                     1 for e in eval_events
-                    if e.get("metadata", {}).get("decision") == "PASS"
+                    if e.get("decision") == "PASS"
                 )
                 total = len(eval_events)
 
