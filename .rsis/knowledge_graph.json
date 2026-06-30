@@ -1,0 +1,24 @@
+{
+  "nodes": [
+    {
+      "id": "improvement-0",
+      "attrs": {
+        "type": "improvement",
+        "description": "Stub improvement: optimize imports",
+        "target_files": [
+          "stub.py"
+        ],
+        "scores": {
+          "correctness": 1.0,
+          "safety": 1.0,
+          "efficiency": 1.0,
+          "style": 1.0,
+          "regression": 1.0
+        },
+        "outcome": "applied",
+        "goal": "optimize imports"
+      }
+    }
+  ],
+  "edges": []
+}
