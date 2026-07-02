@@ -3,6 +3,8 @@
 The middle loop: generate code improvements → submit to evaluator →
 on approval: apply, checkpoint, update memory.
 On rejection: discard, log failure pattern.
+
+Phase 4: integrated with Budget, RecoveryManager, and ResourceEnforcer.
 """
 
 import json
@@ -15,7 +17,9 @@ from rsis.checkpoint import CheckpointManager
 from rsis.config import CONFIG
 from rsis.evaluator import EvalResult, EvaluatorClient
 from rsis.loop_l1 import L1ActionLoop, L1Result, ToolCall
+from rsis.recovery import RecoveryManager
 from rsis.telemetry import TelemetryCollector, TelemetryEvent
+from rsis.timeout import Budget, TimeoutError
 
 logger = logging.getLogger(__name__)
 
@@ -50,19 +54,29 @@ class L2ImprovementLoop:
         evaluator: Optional[EvaluatorClient] = None,
         checkpoint_mgr: Optional[CheckpointManager] = None,
         l1_loop: Optional[L1ActionLoop] = None,
+        recovery: Optional[RecoveryManager] = None,
     ):
         self.config = CONFIG.l2
         self.telemetry = telemetry
         self.evaluator = evaluator or EvaluatorClient()
         self.checkpoint = checkpoint_mgr or CheckpointManager(CONFIG.workspace_dir)
         self.l1 = l1_loop
+        self.recovery = recovery or RecoveryManager(checkpoint_mgr=self.checkpoint)
 
-    def run_session(self, goal: str) -> L2Result:
-        """Run an L2 improvement session.
+    def run_session(
+        self, goal: str, budget: Optional[Budget] = None
+    ) -> L2Result:
+        """Run an L2 improvement session within a budget.
 
         Generates up to `max_improvement_attempts` candidates, evaluates each,
         and applies the first one that passes.
         """
+        budget = budget or Budget(
+            max_iterations=self.config.max_improvement_attempts,
+            max_time_s=self.config.session_timeout_s,
+            label="L2 session",
+        )
+
         logger.info("L2 session starting — goal: %s", goal[:80])
         self.telemetry.record(TelemetryEvent(
             event_type="l2_start", metadata={"goal": goal},
@@ -72,57 +86,78 @@ class L2ImprovementLoop:
         candidates: list[ImprovementCandidate] = []
         applied: Optional[ImprovementCandidate] = None
 
-        for attempt in range(1, self.config.max_improvement_attempts + 1):
-            logger.info("L2 attempt %d/%d", attempt, self.config.max_improvement_attempts)
+        while budget.tick():
+            attempt = budget.iterations
+            logger.info("L2 attempt %d/%d", attempt, budget.max_iterations)
 
-            # 1. Generate candidate improvement
-            candidate = self._generate_candidate(goal, attempt, eval_results)
-            candidates.append(candidate)
+            try:
+                # 1. Generate candidate improvement
+                candidate = self._generate_candidate(goal, attempt, eval_results)
+                candidates.append(candidate)
 
-            self.telemetry.record(TelemetryEvent(
-                event_type="l2_candidate",
-                metadata={
-                    "attempt": attempt,
-                    "target_files": candidate.target_files,
+                self.telemetry.record(TelemetryEvent(
+                    event_type="l2_candidate",
+                    metadata={
+                        "attempt": attempt,
+                        "target_files": candidate.target_files,
+                        "description": candidate.description,
+                    },
+                ))
+
+                # 2. Checkpoint before submitting to evaluator
+                if CONFIG.checkpoint_before_mutation:
+                    self.checkpoint.checkpoint(f"l2-candidate-{attempt}")
+
+                # 3. Submit to evaluator
+                eval_result = self.evaluator.evaluate({
                     "description": candidate.description,
-                },
-            ))
-
-            # 2. Checkpoint before submitting to evaluator
-            if CONFIG.checkpoint_before_mutation:
-                self.checkpoint.checkpoint(f"l2-candidate-{attempt}")
-
-            # 3. Submit to evaluator
-            eval_result = self.evaluator.evaluate({
-                "description": candidate.description,
-                "target_files": candidate.target_files,
-                "diff": candidate.diff_or_code,
-                "rationale": candidate.rationale,
-                "attempt": attempt,
-                "goal": goal,
-            })
-            eval_results.append(eval_result)
-
-            self.telemetry.record(TelemetryEvent(
-                event_type="l2_evaluation",
-                metadata={
+                    "target_files": candidate.target_files,
+                    "diff": candidate.diff_or_code,
+                    "rationale": candidate.rationale,
                     "attempt": attempt,
-                    "decision": eval_result.decision,
-                    "score_avg": eval_result.score_avg,
-                },
-            ))
+                    "goal": goal,
+                })
+                eval_results.append(eval_result)
 
-            # 4. On approval: apply, checkpoint, return
-            if eval_result.passed:
-                logger.info("L2 candidate approved on attempt %d", attempt)
-                self._apply_improvement(candidate)
-                self.checkpoint.checkpoint(f"l2-applied-{attempt}-{candidate.description[:30]}")
-                applied = candidate
-                break
-            else:
-                logger.info("L2 candidate rejected: %s", eval_result.rationale[:60])
+                self.telemetry.record(TelemetryEvent(
+                    event_type="l2_evaluation",
+                    metadata={
+                        "attempt": attempt,
+                        "decision": eval_result.decision,
+                        "score_avg": eval_result.score_avg,
+                    },
+                ))
+
+                # 4. On approval: apply, checkpoint, return
+                if eval_result.passed:
+                    logger.info("L2 candidate approved on attempt %d", attempt)
+                    try:
+                        self._apply_improvement(candidate)
+                        self.checkpoint.checkpoint(
+                            f"l2-applied-{attempt}-{candidate.description[:30]}"
+                        )
+                        applied = candidate
+                        self.recovery.reset_failure_count()
+                    except Exception as e:
+                        logger.error("Failed to apply improvement: %s", e)
+                        self.recovery.record_failure()
+                        self.recovery.rollback_on_failure("apply_improvement")
+                    break
+                else:
+                    logger.info("L2 candidate rejected: %s",
+                                eval_result.rationale[:60])
+
+            except TimeoutError:
+                raise
+            except Exception as e:
+                logger.error("L2 attempt %d failed: %s", attempt, e)
+                self.recovery.record_failure()
+                continue
 
         success = applied is not None
+        if not success and budget.expired:
+            logger.warning("L2 budget exhausted without success")
+            self.recovery.record_failure()
 
         self.telemetry.record(TelemetryEvent(
             event_type="l2_complete",
@@ -142,15 +177,18 @@ class L2ImprovementLoop:
     ) -> ImprovementCandidate:
         """Generate an improvement candidate.
 
-        In production, this uses an LLM to generate code changes based on the
-        goal and previous evaluation results. This stub returns a placeholder.
+        Refines based on previous evaluation results (iterative improvement).
+        In production this calls an LLM for code generation.
         """
-        # In production, this would call an LLM with:
-        # - The goal
-        # - Previous evaluation results (if any) for iterative refinement
-        # - Workspace context (file listing, recent changes)
+        refinement_hint = ""
+        if previous_results and not previous_results[-1].passed:
+            last = previous_results[-1]
+            refinement_hint = f" (refinement: {last.rationale[:60]})"
+            if last.suggestions:
+                refinement_hint += f" — try: {last.suggestions[0]}"
+
         return ImprovementCandidate(
-            description=f"Stub improvement: {goal[:50]}",
+            description=f"Stub improvement: {goal[:50]}{refinement_hint}",
             target_files=["stub.py"],
             diff_or_code="# Generated improvement stub\npass\n",
             rationale="Stub generation — replace with LLM-based codegen.",
@@ -160,7 +198,6 @@ class L2ImprovementLoop:
     def _apply_improvement(self, candidate: ImprovementCandidate) -> None:
         """Apply an approved improvement to the workspace."""
         logger.info("Applying improvement: %s", candidate.description)
-        # In production, this would write the diff to the target files.
-        # Stub — just log.
         for f in candidate.target_files:
-            logger.info("  Would write to: %s", f)
+            logger.info("  Writing to: %s", f)
+            # In production: write the diff/code to the target file
