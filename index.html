@@ -7,6 +7,7 @@
 <script src="https://cdn.tailwindcss.com">
 // Comprehensive tooltip system
 document.addEventListener('mouseover', function(e){
+  if(e.target.tagName==='CANVAS') return;
   var t = e.target.closest('[data-tt]');
   if(!t) return;
   var key = t.getAttribute('data-tt');
@@ -502,18 +503,18 @@ body{background:#0f172a;color:#e2e8f0;font-family:ui-sans-serif,system-ui,sans-s
 <!-- GRAPHS TAB -->
 <div class="tab-body hide" id="b-graphs">
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4">
-    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c1"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Decision Dist</h3><canvas id="c1" data-tt="graph:c1"></canvas></div>
-    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c2"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Success Rate</h3><canvas id="c2" data-tt="graph:c2"></canvas></div>
-    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c3"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Duration</h3><canvas id="c3" data-tt="graph:c3"></canvas></div>
+    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c1"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Decision Dist</h3><canvas id="c1"></canvas></div>
+    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c2"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Success Rate</h3><canvas id="c2"></canvas></div>
+    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c3"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Duration</h3><canvas id="c3"></canvas></div>
   </div>
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
-    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c4"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Confidence</h3><canvas id="c4" data-tt="graph:c4"></canvas></div>
-    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c5"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Layer Scores</h3><canvas id="c5" data-tt="graph:c5"></canvas></div>
+    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c4"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Confidence</h3><canvas id="c4"></canvas></div>
+    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c5"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Layer Scores</h3><canvas id="c5"></canvas></div>
   </div>
-  <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 mb-4 tooltip-wrap" data-tt="graph:c6"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Goals Per Pulse</h3><canvas id="c6" data-tt="graph:c6"></canvas></div>
+  <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 mb-4 tooltip-wrap" data-tt="graph:c6"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Goals Per Pulse</h3><canvas id="c6"></canvas></div>
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c7"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Constraints</h3><canvas id="c7" data-tt="graph:c7"></canvas></div>
-    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c8"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Score Radar</h3><canvas id="c8" data-tt="graph:c8"></canvas></div>
+    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c7"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Constraints</h3><canvas id="c7"></canvas></div>
+    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c8"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Score Radar</h3><canvas id="c8"></canvas></div>
   </div>
 </div>
 
@@ -524,8 +525,8 @@ body{background:#0f172a;color:#e2e8f0;font-family:ui-sans-serif,system-ui,sans-s
     <div id="cbd" class="space-y-3"></div>
   </div>
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c9"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Constraint Dist</h3><canvas id="c9" data-tt="graph:c9"></canvas></div>
-    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c10"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Lock Rate</h3><canvas id="c10" data-tt="graph:c10"></canvas></div>
+    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c9"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Constraint Dist</h3><canvas id="c9"></canvas></div>
+    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c10"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Lock Rate</h3><canvas id="c10"></canvas></div>
   </div>
 </div>
 
@@ -544,9 +545,13 @@ sh = AD.score_history || {};
   renderAll();
 
 
-function renderAll(){ly();rg();rp();rc();rcb();bk();ic();pf();sw('overview');}
+function renderAll(){ly();rg();rp();rc();rcb();bk();pf();sw('overview');}
 
 function sw(n){
+  if(n==='graphs' && !window._chartsInited){
+    window._chartsInited=true;
+    setTimeout(function(){ic();}, 100);
+  }
   document.querySelectorAll('.tb').forEach(function(t){
     t.classList.remove('bg-indigo-500','text-white','shadow');
     t.classList.add('text-slate-400','hover:text-slate-200','hover:bg-slate-700/40');
