@@ -1,0 +1,6 @@
+{
+  "title": "RSIS Dashboard",
+  "description": "Recursively Self-Improving System — monitoring & control dashboard with knowledge graphs, vector stores, and telemetry.",
+  "category": "Developer Tools",
+  "icon": "icon.svg"
+}

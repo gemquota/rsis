@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RSIS Dashboard</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .toast-enter-active { animation: slideIn 0.3s ease; }
+    .toast-leave-active { animation: slideOut 0.3s ease; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+    .pulse { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  </style>
+</head>
+<body class="bg-[#0d1117] text-[#e6edf3] min-h-screen font-sans">
+  <div id="app">
+    <header class="border-b border-[#30363d] bg-[#161b22]/80 backdrop-blur sticky top-0 z-40">
+      <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="text-xl">⟳</span>
+          <h1 class="font-semibold text-lg">RSIS</h1>
+          <span class="text-xs text-[#8b949e] hidden sm:inline">Recursive Self-Improvement System</span>
+        </div>
+        <div class="flex items-center gap-4 text-sm">
+          <span class="flex items-center gap-1.5" :class="connected ? 'text-[#3fb950]' : 'text-[#8b949e]'">
+            <span class="w-2 h-2 rounded-full" :class="connected ? 'bg-[#3fb950] pulse' : 'bg-[#8b949e]'"></span>
+            {{ connected ? 'Companion connected' : 'Companion offline' }}
+          </span>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 py-8 space-y-6">
+      <!-- Stats grid -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-[#161b22] border border-[#30363d] rounded-lg p-4">
+          <div class="text-[#8b949e] text-xs uppercase tracking-wide">Deployments</div>
+          <div class="text-2xl font-bold mt-1">{{ deployCount }}</div>
+          <div class="text-xs text-[#8b949e] mt-1">total deploys</div>
+        </div>
+        <div class="bg-[#161b22] border border-[#30363d] rounded-lg p-4">
+          <div class="text-[#8b949e] text-xs uppercase tracking-wide">Files watched</div>
+          <div class="text-2xl font-bold mt-1">{{ fileCount }}</div>
+          <div class="text-xs text-[#8b949e] mt-1">in project</div>
+        </div>
+        <div class="bg-[#161b22] border border-[#30363d] rounded-lg p-4">
+          <div class="text-[#8b949e] text-xs uppercase tracking-wide">Status</div>
+          <div class="mt-1">
+            <span class="inline-block px-2 py-0.5 rounded text-xs font-medium"
+              :class="connected ? 'bg-[#3fb950] text-black' : 'bg-[#8b949e] text-black'">
+              {{ connected ? 'Running' : 'Offline' }}
+            </span>
+          </div>
+          <div class="text-xs text-[#8b949e] mt-1">{{ connected ? 'auto-deploy active' : 'waiting for companion' }}</div>
+        </div>
+        <div class="bg-[#161b22] border border-[#30363d] rounded-lg p-4">
+          <div class="text-[#8b949e] text-xs uppercase tracking-wide">Last update</div>
+          <div class="text-sm font-mono mt-1">{{ lastUpdate || '—' }}</div>
+          <div class="text-xs text-[#8b949e] mt-1 truncate">{{ lastUpdateFile || '' }}</div>
+        </div>
+      </div>
+
+      <!-- Event log -->
+      <div class="bg-[#161b22] border border-[#30363d] rounded-lg p-4">
+        <h3 class="text-[#8b949e] text-xs uppercase tracking-wide mb-3">Live Events</h3>
+        <div class="space-y-1 max-h-64 overflow-y-auto font-mono text-xs" ref="eventLog">
+          <div v-for="ev in events" :key="ev.id"
+            class="flex gap-2 py-1 border-b border-[#30363d]/50">
+            <span class="text-[#8b949e] whitespace-nowrap">{{ ev.time }}</span>
+            <span class="font-semibold min-w-[70px]"
+              :class="ev.type === 'deploy' ? 'text-[#3fb950]' : 'text-[#58a6ff]'">{{ ev.type }}</span>
+            <span class="text-[#e6edf3] truncate">{{ ev.msg }}</span>
+          </div>
+          <div v-if="events.length === 0" class="text-[#8b949e] text-xs italic">No events yet — edit a file to trigger a deploy</div>
+        </div>
+      </div>
+
+      <!-- Instructions -->
+      <div class="bg-[#161b22] border border-[#30363d] rounded-lg p-4 text-sm text-[#8b949e] space-y-1">
+        <p>Run <code class="text-[#58a6ff] bg-[#0d1117] px-1.5 py-0.5 rounded">node companion.js</code> in the project directory to enable auto-deploy.</p>
+        <p>Edit any file — the companion re-deploys to Anyclaw and this dashboard updates instantly.</p>
+      </div>
+    </main>
+
+    <!-- Toast -->
+    <div class="fixed bottom-4 right-4 z-50 space-y-2 w-80">
+      <div v-for="t in toasts" :key="t.id"
+        class="toast-enter-active flex items-start gap-3 rounded-xl px-4 py-3 shadow-lg text-sm backdrop-blur"
+        :class="t.type === 'deploy' ? 'bg-[#3fb950]/20 border border-[#3fb950]/40 text-[#3fb950]' : 'bg-[#58a6ff]/20 border border-[#58a6ff]/40 text-[#58a6ff]'">
+        <span>{{ t.type === 'deploy' ? '🚀' : '📁' }}</span>
+        <div class="flex-1 min-w-0">
+          <div class="font-medium">{{ t.type === 'deploy' ? 'Deployed' : 'Change detected' }}</div>
+          <div class="text-xs opacity-75 truncate">{{ t.msg }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref, onMounted, onUnmounted, nextTick } = Vue;
+
+    createApp({
+      setup() {
+        const connected = ref(false);
+        const deployCount = ref(0);
+        const fileCount = ref(0);
+        const lastUpdate = ref(null);
+        const lastUpdateFile = ref(null);
+        const events = ref([]);
+        const toasts = ref([]);
+        const eventLog = ref(null);
+
+        function addToast(type, msg) {
+          const id = Date.now();
+          toasts.value.push({ type, msg, id });
+          if (toasts.value.length > 10) toasts.value.shift();
+          setTimeout(() => { const i = toasts.value.findIndex(t => t.id === id); if (i !== -1) toasts.value.splice(i, 1); }, 5000);
+        }
+
+        function addEvent(type, msg) {
+          const time = new Date().toLocaleTimeString();
+          events.value.unshift({ type, msg, time, id: Date.now() });
+          if (events.value.length > 100) events.value.pop();
+        }
+
+        let ws = null, reconnectTimer = null;
+        function connect() {
+          ws = new WebSocket('ws://localhost:3572');
+          ws.onopen = () => { connected.value = true; addEvent('info', 'Companion connected'); };
+          ws.onclose = () => { connected.value = false; clearTimeout(reconnectTimer); reconnectTimer = setTimeout(connect, 3000); };
+          ws.onmessage = (e) => {
+            try {
+              const msg = JSON.parse(e.data);
+              if (msg.type === 'deploy') {
+                deployCount.value++;
+                lastUpdate.value = msg.deployedAt || new Date().toLocaleTimeString();
+                lastUpdateFile.value = msg.file || '';
+                fileCount.value = msg.fileCount || 0;
+                addEvent('deploy', `${msg.file} deployed` + (msg.claimUrl ? ' — ' + msg.claimUrl : ''));
+                addToast('deploy', `${msg.file} deployed`);
+              } else if (msg.type === 'change') {
+                lastUpdateFile.value = msg.file || '';
+                fileCount.value = msg.fileCount || 0;
+                addEvent('change', `File: ${msg.file}`);
+                addToast('info', `Changed: ${msg.file}`);
+              }
+            } catch(_) {}
+          };
+        }
+
+        onMounted(() => connect());
+        onUnmounted(() => { if (ws) ws.close(); });
+
+        return { connected, deployCount, fileCount, lastUpdate, lastUpdateFile, events, toasts, eventLog };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
