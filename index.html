@@ -112,11 +112,11 @@ body{background:#0f172a;color:#e2e8f0;font-family:ui-sans-serif,system-ui,sans-s
 <!-- GRAPHS TAB -->
 <div class="tab-body hide" id="b-graphs">
   <div class="space-y-4">
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c1"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Decision Distribution</h3><canvas id="c1" class="pie-full"></canvas></div>
-    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c11"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Goal Type Distribution</h3><canvas id="c11" class="pie-full"></canvas></div>
-    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c12"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Constraint Lock State</h3><canvas id="c12" class="pie-full"></canvas></div>
-    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c13"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Pulse Type Distribution</h3><canvas id="c13" class="pie-full"></canvas></div>
+  <div style="display:flex;flex-wrap:wrap;gap:16px">
+    <div style="flex:1 1 calc(50% - 8px);min-width:250px" class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c1"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Decision Distribution</h3><canvas id="c1" class="pie-full"></canvas></div>
+    <div style="flex:1 1 calc(50% - 8px);min-width:250px" class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c11"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Goal Type Distribution</h3><canvas id="c11" class="pie-full"></canvas></div>
+    <div style="flex:1 1 calc(50% - 8px);min-width:250px" class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c12"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Constraint Lock State</h3><canvas id="c12" class="pie-full"></canvas></div>
+    <div style="flex:1 1 calc(50% - 8px);min-width:250px" class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c13"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Pulse Type Distribution</h3><canvas id="c13" class="pie-full"></canvas></div>
   </div>
     <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c2"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Success Rate</h3><canvas id="c2"></canvas></div>
     <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c3"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Duration</h3><canvas id="c3"></canvas></div>
