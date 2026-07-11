@@ -300,16 +300,6 @@ body{background:#0f172a;color:#e2e8f0;font-family:ui-sans-serif,system-ui,sans-s
   </div>
 </div>
 
-<!-- GOALS TAB -->
-<div class="tab-body hide" id="b-goals">
-  <div class="flex flex-col sm:flex-row gap-2 mb-3">
-    <input id="gs" type="text" placeholder="Search goals..." class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder-slate-500" oninput="fl()"/>
-    <select id="gf" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200" onchange="fl()"><option value="">All</option><option value="PASS">PASS</option><option value="FAIL">FAIL</option><option value="HOLD">HOLD</option></select>
-    <span class="text-xs text-slate-400 self-center" id="gc"></span>
-  </div>
-  <div id="gl" class="space-y-2"></div>
-</div>
-
 <!-- PULSES TAB -->
 <div class="tab-body hide" id="b-pulses"><div id="pl" class="space-y-2"></div></div>
 
@@ -342,15 +332,6 @@ body{background:#0f172a;color:#e2e8f0;font-family:ui-sans-serif,system-ui,sans-s
     <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c7"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Constraints</h3><canvas id="c7" data-tt="graph:c7"></canvas></div>
     <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c8"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Score Radar</h3><canvas id="c8" data-tt="graph:c8"></canvas></div>
   </div>
-</div>
-
-<!-- CONVERSATION TAB -->
-<div class="tab-body hide" id="b-conv">
-  <div class="flex gap-2 mb-3">
-    <select id="cpf" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200" onchange="rc()"><option value="">All Pulses</option></select>
-    <span class="text-xs text-slate-400 self-center" id="cc"></span>
-  </div>
-  <div id="cl" class="space-y-3"></div>
 </div>
 
 <!-- CONSTRAINTS TAB -->
@@ -474,19 +455,20 @@ function rp(){
   var el=document.getElementById('pl');if(!el)return;el.innerHTML='';
   for(var i=0;i<pu.length;i++){var p=pu[i];
     var pid=(''+p.id).padStart(3,'0'),hd=PD[pid],ps=hd&&hd.pre_state;
+    var pg = g.filter(function(gl){return ''+gl.p===''+p.id;});
     var cd=document.createElement('div');
     cd.className='bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden';
     cd.innerHTML='<div class="p-3 sm:p-4 cursor-pointer flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 hover:bg-slate-700/20" onclick="tp('+i+')">'+
       '<div class="flex items-center gap-3"><span class="px-2 py-1 bg-indigo-500/10 text-indigo-400 text-xs font-bold rounded-full border border-indigo-500/20">#'+p.id+'</span>'+
       '<div><div class="text-sm font-semibold text-slate-200">'+(p.type||'Pulse')+'</div>'+
       '<div class="text-[10px] text-slate-500 font-mono">'+(p.ts_start?.substring(11,19)||'')+'</div></div></div>'+
-      '<div class="flex items-center gap-3"><span class="text-[10px] text-slate-400">'+(p.goals_count||0)+'g</span>'+
+      '<div class="flex items-center gap-3"><span class="text-[10px] text-slate-400">'+pg.length+'g</span>'+
       '<span class="text-[10px] text-emerald-400 font-mono">'+(p.duration||'?')+'s</span>'+
       '<span class="text-xs text-slate-400 arrow">&#x25BC;</span></div></div>'+
       '<div class="hide border-t border-slate-700/50 p-3 sm:p-4 bg-slate-900/40" id="pd'+i+'">'+
       '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">'+
       '<div class="bg-slate-800/60 rounded-lg p-2 text-center"><div class="text-xs font-bold text-emerald-400">'+(p.approved||0)+'</div><div class="text-[9px] text-slate-400">Approved</div></div>'+
-      '<div class="bg-slate-800/60 rounded-lg p-2 text-center"><div class="text-xs font-bold text-indigo-400">'+(p.goals_count||0)+'</div><div class="text-[9px] text-slate-400">Goals</div></div>'+
+      '<div class="bg-slate-800/60 rounded-lg p-2 text-center"><div class="text-xs font-bold text-indigo-400">'+pg.length+'</div><div class="text-[9px] text-slate-400">Goals</div></div>'+
       '<div class="bg-slate-800/60 rounded-lg p-2 text-center"><div class="text-xs font-bold text-amber-400">'+(p.implementation_count||0)+'</div><div class="text-[9px] text-slate-400">Impl</div></div>'+
       '<div class="bg-slate-800/60 rounded-lg p-2 text-center"><div class="text-xs font-bold text-purple-400">'+(p.avg_confidence||'')+'</div><div class="text-[9px] text-slate-400">Conf</div></div></div>'+
       (ps?'<div class="border-t border-slate-700/40 pt-3"><div class="grid grid-cols-5 gap-2">'+
@@ -495,6 +477,36 @@ function rp(){
       '<div class="bg-slate-800/60 rounded p-2 text-center"><div class="text-[9px] text-slate-400">OK</div><div class="text-xs font-bold text-emerald-400">'+(ps.successful||0)+'</div></div>'+
       '<div class="bg-slate-800/60 rounded p-2 text-center"><div class="text-[9px] text-slate-400">Cyc</div><div class="text-xs font-bold">'+(ps.cycle_count||0)+'</div></div>'+
       '<div class="bg-slate-800/60 rounded p-2 text-center"><div class="text-[9px] text-slate-400">Layers</div><div class="text-xs font-bold text-indigo-400">'+(ps.scores?Object.keys(ps.scores).length:'0')+'</div></div></div></div>':'')+
+      (pg.length?'<div class="border-t border-slate-700/40 pt-3"><h4 class="text-xs font-bold text-slate-400 uppercase mb-3">Goals &amp; Conversations</h4><div class="space-y-3">'+
+      pg.map(function(gl,gj){
+        var cv=gl.conversation||[];
+        var cn=gl.constraints||{};
+        var cnk=Object.keys(cn);
+        var decCol=gl.dec==='PASS'?'text-emerald-400':gl.dec==='FAIL'?'text-rose-400':'text-amber-400';
+        return '<div class="bg-slate-800/60 rounded-lg border border-slate-700/40 overflow-hidden">'+
+          '<div class="p-3 cursor-pointer hover:bg-slate-700/20" onclick="tg(\' + i + '-' + gj + \')">'+
+          '<div class="flex items-center justify-between gap-2"><div class="flex items-center gap-2 flex-1">'+
+          '<span class="px-1.5 py-0.5 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold rounded border border-indigo-500/20">#'+(gl.p||'?')+'.'+(gj+1)+'</span>'+
+          '<span class="text-[11px] '+decCol+' font-semibold">'+(gl.dec||'?')+'</span></div>'+
+          '<div class="flex items-center gap-2"><span class="text-[9px] text-slate-400">'+(gl.conf?(gl.conf*100).toFixed(0)+'%':'')+'</span>'+
+          '<span class="text-xs text-slate-400 arrow">&#x25BC;</span></div></div>'+
+          '<p class="text-xs text-slate-300 mt-1" style="overflow-wrap:break-word">'+(gl.d||'')+'</p></div>'+
+          '<div class="hide border-t border-slate-700/30 p-3 bg-slate-900/40 space-y-3" id="gd'+i+'-'+gj+'">'+
+          (gl.file||gl.func?'<div class="flex flex-wrap gap-2 text-[10px] font-mono text-slate-400">'+
+          (gl.file?'<span class="bg-slate-800 px-2 py-0.5 rounded">'+gl.file+'</span>':'')+
+          (gl.func?'<span class="bg-slate-800 px-2 py-0.5 rounded">'+gl.func+'</span>':'')+'</div>':'')+
+          (cnk.length?'<div class="flex flex-wrap gap-1.5">'+cnk.map(function(k){
+            var v=cn[k];
+            return '<span class="px-1.5 py-0.5 text-[9px] rounded '+(v==='LOCKED'?'bg-amber-500/15 text-amber-400 border border-amber-500/20':'bg-slate-800 text-slate-400')+'">'+k+(v==='LOCKED'?' 🔒':'')+'</span>';
+          }).join('')+'</div>':'')+
+          (cv.length?'<div class="space-y-2 max-h-[400px] overflow-y-auto border-t border-slate-700/30 pt-3">'+
+          cv.map(function(e,ei){return '<div class="bg-slate-800/40 rounded-lg p-2.5 border border-slate-700/30"><div class="text-[9px] text-slate-500 font-mono mb-1">#'+(ei+1)+(e.r?' (R'+e.r+')':'')+' <span class="text-indigo-400/60">'+((e.phase==='open_ended'?'OE':e.phase==='multi_choice'?'MC':e.phase==='probing'?'PB':e.phase||'?'))+'</span></div>'+
+          (e.q?'<div class="text-[11px] text-slate-300 mb-1" style="overflow-wrap:break-word"><span class="text-indigo-400 font-bold">Q:</span> '+fa(e.q)+'</div>':'')+
+          (e.a!==undefined&&e.a!==null&&e.a!==''?'<div class="text-[11px] text-slate-400" style="overflow-wrap:break-word"><span class="text-emerald-400 font-bold">A:</span> '+fa(e.a)+'</div>':'')+'</div>';}).join('')+
+          '</div>':'<div class="text-[10px] text-slate-500 italic border-t border-slate-700/30 pt-2">No RRP conversation recorded for this goal.</div>')+
+          '</div></div>';
+      }).join('')+
+      '</div></div>':'')+
       '</div>';
     el.appendChild(cd);
   }
