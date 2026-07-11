@@ -28,11 +28,16 @@ document.addEventListener('mouseout', function(e){
 
 function getTooltipContent(key){
   var parts = key.split(':');
-  var type = parts[0], name = parts[1]||'', idx = parseInt(parts[2]||-1);
+  var type = parts[0], name = parts[1]||'', a = parseInt(parts[2]||-1), b = parseInt(parts[3]||-1), c = parseInt(parts[4]||-1);
   if(type==='layer') return getLayerTooltip(name);
   if(type==='metric') return getMetricTooltip(name);
-  if(type==='goal') return getGoalTooltip(idx);
-  if(type==='pulse') return getPulseTooltip(name);
+  if(type==='goal') return getGoalTooltip(name);
+  if(type==='pulse') return getPulseTooltip2(a, name);
+  if(type==='pstat') return getPulseStatTooltip(a, name);
+  if(type==='ppre') return getPulsePreStateTooltip(a, name);
+  if(type==='pgoal') return getPulseGoalTooltip(a, b);
+  if(type==='pconv') return getPulseConvTooltip(a, b, c);
+  if(type==='pconst') return getPulseConstraintTooltip(name);
   if(type==='constraint') return getConstraintTooltip(name);
   if(type==='graph') return getGraphTooltip(name);
   if(type==='tab') return getTabTooltip(name);
@@ -203,6 +208,156 @@ function getTabTooltip(name){
   return '<h4>'+name.charAt(0).toUpperCase()+name.slice(1)+' Tab</h4><p>'+(descs[name]||'Telemetry dashboard tab.')+'</p>';
 }
 
+
+
+// Pulse-specific comprehensive tooltips
+function getPulseTooltip2(idx, sub){
+  if(idx<0||idx>=pu.length) return '<h4>Pulse</h4><p>Unknown pulse.</p>';
+  var p=pu[idx];
+  var pid=(''+p.id).padStart(3,'0'),hd=PD[pid],ps=hd&&hd.pre_state;
+  var pg=g.filter(function(gl){return ''+gl.p===''+p.id;});
+  var pass=pg.filter(function(gx){return gx.dec==='PASS';}).length;
+  var fail=pg.filter(function(gx){return gx.dec==='FAIL';}).length;
+  var hold=pg.filter(function(gx){return gx.dec==='HOLD';}).length;
+  var hasConv=pg.filter(function(gx){return(gx.conversation||[]).length>0;}).length;
+  var sp='';
+  if(ps) sp='<div class="tt-section"><div class="tt-metric"><span class="tt-label">Success Rate</span><span class="tt-val">'+(ps.success_rate*100).toFixed(1)+'%</span></div>'+
+    '<div class="tt-metric"><span class="tt-label">Total Improvements</span><span class="tt-val">'+(ps.total_improvements||0)+'</span></div>'+
+    '<div class="tt-metric"><span class="tt-label">Cycle Count</span><span class="tt-val">'+(ps.cycle_count||0)+'</span></div></div>';
+  return '<h4>Pulse #'+p.id+' \u2014 '+(p.type||'Standard')+'</h4>'+
+    '<p>An execution pulse that processes a batch of improvement goals through the RSIS pipeline. Each pulse runs the full L4 cycle: signal detection \u2192 goal generation \u2192 evaluation \u2192 implementation \u2192 verification.</p>'+
+    '<div class="tt-grid">'+
+    '<div class="tt-grid-item"><div class="tt-gv">'+pg.length+'</div><div class="tt-gl">Goals</div></div>'+
+    '<div class="tt-grid-item"><div class="tt-gv">'+pass+'</div><div class="tt-gl">Passed</div></div>'+
+    '<div class="tt-grid-item"><div class="tt-gv">'+fail+'</div><div class="tt-gl">Failed</div></div>'+
+    '<div class="tt-grid-item"><div class="tt-gv">'+(p.duration||'?')+'s</div><div class="tt-gl">Duration</div></div>'+
+    '</div>'+
+    (hasConv?'<div class="tt-metric"><span class="tt-label">Goals with RRP</span><span class="tt-val">'+hasConv+'/'+pg.length+'</span></div>':'')+
+    (p.avg_confidence!==undefined?'<div class="tt-metric"><span class="tt-label">Avg Confidence</span><span class="tt-val">'+(p.avg_confidence*100).toFixed(0)+'%</span></div>':'')+
+    sp+
+    '<div class="tt-section"><p><strong>Telemetry:</strong> Pulse captures pre-state system metrics, processes goals through the eval pipeline, and records post-state changes including score updates and KG modifications.</p></div>';
+}
+
+function getPulseStatTooltip(idx, name){
+  if(idx<0||idx>=pu.length) return '<h4>Stat</h4><p>Unknown.</p>';
+  var p=pu[idx];
+  var pg=g.filter(function(gl){return ''+gl.p===''+p.id;});
+  var descs={
+    approved:'Number of goals that passed RRP evaluation and were approved for implementation in this pulse.',
+    goals:'Total number of improvement goals generated and processed in this pulse.',
+    impl:'Number of improvements that were successfully implemented (code generated, applied, and verified).',
+    conf:'Average confidence score across all RRP evaluations in this pulse. Higher values (0-100%) indicate clearer, better-defined goals.'
+  };
+  var vals={approved:p.approved||0,goals:pg.length,impl:p.implementation_count||0,conf:p.avg_confidence?(p.avg_confidence*100).toFixed(0)+'%':'N/A'};
+  return '<h4>'+name.charAt(0).toUpperCase()+name.slice(1)+'</h4>'+
+    '<p>'+(descs[name]||'Pulse metric.')+'</p>'+
+    '<div class="tt-metric"><span class="tt-label">Value</span><span class="tt-val">'+(vals[name]||'?')+'</span></div>'+
+    (name==='approved'?'<div class="tt-section"><table><tr><th>Metric</th><th>Count</th></tr><tr><td>Total Goals</td><td>'+pg.length+'</td></tr><tr><td>Passed</td><td>'+pg.filter(function(gx){return gx.dec==='PASS';}).length+'</td></tr><tr><td>Failed</td><td>'+pg.filter(function(gx){return gx.dec==='FAIL';}).length+'</td></tr><tr><td>Held</td><td>'+pg.filter(function(gx){return gx.dec==='HOLD';}).length+'</td></tr></table></div>':'')+
+    (name==='impl'?'<div class="tt-section"><p>Implementation rate: '+(pg.length>0?((p.implementation_count||0)/pg.length*100).toFixed(0):'0')+'% of goals resulted in applied improvements.</p></div>':'');
+}
+
+function getPulsePreStateTooltip(idx, name){
+  if(idx<0||idx>=pu.length) return '<h4>Pre-State</h4><p>Unknown.</p>';
+  var pid=(''+pu[idx].id).padStart(3,'0'),hd=PD[pid],ps=hd&&hd.pre_state;
+  if(!ps) return '<h4>Pre-State</h4><p>No pre-state data recorded for this pulse.</p>';
+  var descs={
+    rate:'Pre-pulse overall success rate across all improvements. Higher = more reliable pipeline.',
+    imps:'Total number of improvement attempts made across all cycles before this pulse.',
+    ok:'Number of successfully applied improvements before this pulse.',
+    cyc:'Total number of improvement cycles completed before this pulse.',
+    layers:'Number of RSIS layers with active capability scores at the time of this pulse.'
+  };
+  var vals={rate:(ps.success_rate*100).toFixed(1)+'%',imps:ps.total_improvements||0,ok:ps.successful||0,cyc:ps.cycle_count||0,layers:ps.scores?Object.keys(ps.scores).length:'0'};
+  return '<h4>Pre-State \u2014 '+name.charAt(0).toUpperCase()+name.slice(1)+'</h4>'+
+    '<p>'+(descs[name]||'Pre-pulse system state metric.')+'</p>'+
+    '<div class="tt-metric"><span class="tt-label">Value</span><span class="tt-val">'+(vals[name]||'?')+'</span></div>'+
+    (name==='rate'?'<div class="tt-section"><div class="tt-minibar"><span class="tt-mb-label">Success Rate</span><div class="tt-mb-track"><div class="tt-mb-fill" style="width:'+(ps.success_rate*100)+'%;background:#10b981"></div></div><span>'+(ps.success_rate*100).toFixed(1)+'%</span></div></div>':'')+
+    (name==='layers'&&ps.scores?'<div class="tt-section">'+Object.keys(ps.scores).map(function(l){return '<div class="tt-minibar"><span class="tt-mb-label">'+l+'</span><div class="tt-mb-track"><div class="tt-mb-fill" style="width:'+(ps.scores[l]||0)+'%;background:#6366f1"></div></div><span>'+(ps.scores[l]||0)+'</span></div>';}).join('')+'</div>':'');
+}
+
+function getPulseGoalTooltip(idx, gj){
+  if(idx<0||idx>=pu.length||gj<0) return '<h4>Goal</h4>';
+  var p=pu[idx];
+  var pg=g.filter(function(gl){return ''+gl.p===''+p.id;});
+  if(gj>=pg.length) return '<h4>Goal</h4><p>Unknown goal.</p>';
+  var gl=pg[gj];
+  var cv=gl.conversation||[];
+  var cn=gl.constraints||{};
+  var cnk=Object.keys(cn);
+  var cnl=cnk.filter(function(k){return cn[k]==='LOCKED';});
+  var decCol=gl.dec==='PASS'?'#10b981':gl.dec==='FAIL'?'#f43f5e':'#f59e0b';
+  var totalRounds=0,categories={};
+  cv.forEach(function(e){
+    totalRounds++;
+    var ph=e.phase||'other';
+    categories[ph]=(categories[ph]||0)+1;
+  });
+  var catHtml=Object.keys(categories).map(function(k){return '<span class="tt-tag '+(k==='open_ended'?'indigo':k==='multi_choice'?'amber':k==='probing'?'green':'indigo')+'">'+k+' x'+categories[k]+'</span>';}).join(' ');
+  return '<h4>Goal #'+(gj+1)+' in Pulse #'+p.id+'</h4>'+
+    '<p>'+(gl.d||'No description')+'</p>'+
+    '<div class="tt-grid">'+
+    '<div class="tt-grid-item"><div class="tt-gv" style="color:'+decCol+'">'+(gl.dec||'?')+'</div><div class="tt-gl">Decision</div></div>'+
+    '<div class="tt-grid-item"><div class="tt-gv">'+(gl.conf?(gl.conf*100).toFixed(0):'?')+'%</div><div class="tt-gl">Confidence</div></div>'+
+    '<div class="tt-grid-item"><div class="tt-gv">'+totalRounds+'</div><div class="tt-gl">RRP Rounds</div></div>'+
+    '<div class="tt-grid-item"><div class="tt-gv">'+cnk.length+'</div><div class="tt-gl">Constraints</div></div>'+
+    '</div>'+
+    (gl.file||gl.func?'<div class="tt-section"><div class="tt-metric"><span class="tt-label">File</span><span class="tt-val">'+(gl.file||'-')+'</span></div><div class="tt-metric"><span class="tt-label">Function</span><span class="tt-val">'+(gl.func||'-')+'</span></div></div>':'')+
+    (cnk.length?'<div class="tt-section"><p><strong>Constraints ('+cnk.length+')</strong> \u2014 '+cnl.length+' locked:</p>'+
+    cnk.map(function(k){return '<span class="tt-tag '+(cn[k]==='LOCKED'?'amber':'indigo')+'">'+k+(cn[k]==='LOCKED'?' \ud83d\udd12':'')+'</span>';}).join(' ')+'</div>':'')+
+    (totalRounds>0?'<div class="tt-section"><p><strong>RRP Dialogue:</strong> '+totalRounds+' exchange(s) across '+
+    Object.keys(categories).length+' phase type(s).</p><p>'+catHtml+'</p>'+
+    '<div class="tt-minibar"><span class="tt-mb-label">Rounds</span><div class="tt-mb-track"><div class="tt-mb-fill" style="width:100%;background:#6366f1"></div></div><span>'+totalRounds+'</span></div></div>':'');
+}
+
+function getPulseConvTooltip(idx, gj, ei){
+  if(idx<0||idx>=pu.length) return '<h4>Conversation</h4>';
+  var p=pu[idx];
+  var pg=g.filter(function(gl){return ''+gl.p===''+p.id;});
+  if(gj<0||gj>=pg.length) return '<h4>Conversation</h4>';
+  var cv=pg[gj].conversation||[];
+  if(ei<0||ei>=cv.length) return '<h4>Exchange</h4>';
+  var e=cv[ei];
+  var ph=e.phase||'unknown';
+  var phaseLabel={open_ended:'Open-Ended Question',multi_choice:'Multi-Choice Question',probing:'Probing Question'}[ph]||ph;
+  var phaseClass={open_ended:'oe',multi_choice:'mc',probing:'pb'}[ph]||'oe';
+  var rnd=e.r?' (Round '+e.r+')':'';
+  return '<h4>RRP Exchange #'+(ei+1)+rnd+'</h4>'+
+    '<p><span class="tt-phase '+phaseClass+'">'+phaseLabel+'</span></p>'+
+    '<div class="tt-section"><p><strong>Question:</strong><br>'+(e.q||'No question recorded')+'</p></div>'+
+    (e.a!==undefined&&e.a!==null&&e.a!==''?'<div class="tt-section"><p><strong>Answer:</strong><br>'+(typeof e.a==='object'?JSON.stringify(e.a):e.a)+'</p></div>':'<div class="tt-section"><p><em>No answer recorded \u2014 auto-answered by evaluator.</em></p></div>')+
+    '<div class="tt-section"><div class="tt-metric"><span class="tt-label">RRP Phase Type</span><span class="tt-val">'+phaseLabel+'</span></div>'+
+    (e.r?'<div class="tt-metric"><span class="tt-label">Refinement Round</span><span class="tt-val">'+e.r+'</span></div>':'')+'</div>';
+}
+
+function getPulseConstraintTooltip(name){
+  var info={
+    error_handling:{desc:'Ensures errors are properly caught with try/except, logged with context, and handled with graceful fallbacks rather than crashes.',imp:'Critical \u2014 without it, production failures cause silent data loss, corruption, or unhandled crashes.',ex:'try/except blocks with specific exception types, logging of error context, fallback values or graceful degradation'},
+    type_safety:{desc:'Requires type annotations on all function signatures and runtime type validation where applicable.',imp:'Prevents type-related runtime errors, improves IDE support, documents expected interfaces.',ex:'def func(x: int) -> str: with Optional, List, Dict generics; isinstance checks for runtime validation'},
+    test_coverage:{desc:'New or modified code must have corresponding unit/integration tests.',imp:'Essential for regression prevention \u2014 ensures changes don\'t break existing functionality.',ex:'pytest test functions for each new function, parametrize for edge cases, fixtures for test setup'},
+    logging:{desc:'Appropriate logging at info/warn/error levels for debugging, monitoring, and audit trails.',imp:'Required for operational visibility \u2014 without logs, diagnosing production issues becomes guesswork.',ex:'logger.info() for key events, logger.warning() for concerning states, logger.error() for failures with traceback'},
+    documentation:{desc:'Docstrings and documentation updates for new or modified APIs and behaviors.',imp:'Critical for long-term maintainability \u2014 undocumented code becomes unmaintainable technical debt.',ex:'Google-style docstrings, README updates for new features, inline comments for complex logic'},
+    security:{desc:'Security best practices \u2014 input validation, authentication checks, safe deserialization.',imp:'Prevents vulnerabilities including injection attacks, data exposure, and privilege escalation.',ex:'Input sanitization, parameterized queries, auth checks on every endpoint, safe eval alternatives'},
+    input_validation:{desc:'Validate all external inputs before processing \u2014 type, range, format, and content checks.',imp:'Fundamental defense against malformed data, injection, and logic errors from unexpected inputs.',ex:'Type checking, range validation, regex pattern matching, schema validation'},
+    code_quality:{desc:'Code follows best practices \u2014 DRY, single responsibility, clear naming, appropriate abstractions.',imp:'Reduces technical debt, improves readability, makes future modifications safer and faster.',ex:'Extract repeated logic into helpers, meaningful function names, appropriate class hierarchies'},
+    maintainability:{desc:'Code structured for easy future modifications \u2014 modular, with clear interfaces and separation of concerns.',imp:'Essential for sustainable development \u2014 brittle code becomes exponentially harder to change over time.',ex:'Separate concerns into modules, dependency injection, interface-based design'},
+    performance:{desc:'Performance considerations addressed \u2014 algorithm choice, caching, async where appropriate, resource management.',imp:'Prevents regressions that degrade user experience or increase operational costs.',ex:'Use appropriate data structures, add caching for repeated computations, async I/O for blocking calls'}
+  };
+  var ci=info[name];
+  if(!ci) return '<h4>'+name.replace(/_/g,' ').replace(/\b\w/g,function(l){return l.toUpperCase();})+'</h4><p>An RRP constraint tracked during goal evaluation.</p>';
+  var cd=(typeof AD!=='undefined'&&AD.summary&&AD.summary.cd)?AD.summary.cd[name]:null;
+  var freq=cd?cd.freq:'?';
+  var locked=cd?cd.locked:'?';
+  return '<h4>'+name.replace(/_/g,' ').replace(/\b\w/g,function(l){return l.toUpperCase();})+'</h4>'+
+    '<p><strong>Definition:</strong> '+ci.desc+'</p>'+
+    '<p><strong>Importance:</strong> '+ci.imp+'</p>'+
+    '<div class="tt-section"><p><strong>Examples:</strong> '+ci.ex+'</p></div>'+
+    '<div class="tt-section"><table><tr><th>Metric</th><th>Value</th></tr>'+
+    '<tr><td>Frequency</td><td>'+freq+' times</td></tr>'+
+    '<tr><td>Locked Count</td><td>'+locked+' times</td></tr>'+
+    (freq!=='?'&&freq>0?'<tr><td>Lock Rate</td><td>'+(locked/freq*100).toFixed(0)+'%</td></tr>':'')+
+    '</table></div>';
+}
+
 function getSummaryTooltip(name){
   var descs = {
     tot:'Total number of goals processed across all pulses. Each goal represents one improvement attempt.',
@@ -248,7 +403,37 @@ body{background:#0f172a;color:#e2e8f0;font-family:ui-sans-serif,system-ui,sans-s
 .tooltip-wrap .tooltip .tt-metric .tt-val{color:#e2e8f0;font-weight:600}
 /* Make cards with tooltip-wrap work */
 .card-tt{cursor:pointer}
-/* Mini sparkline placeholder */
+
+/* Enhanced tooltip with mini-graph sparkline support */
+.tooltip-wrap .tooltip.tt-wide{width:400px;max-height:500px}
+.tooltip-wrap .tooltip .tt-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0}
+.tooltip-wrap .tooltip .tt-grid-item{background:#0f172a;border-radius:6px;padding:6px;text-align:center}
+.tooltip-wrap .tooltip .tt-grid-item .tt-gv{font-size:16px;font-weight:700;color:#e2e8f0}
+.tooltip-wrap .tooltip .tt-grid-item .tt-gl{font-size:9px;color:#64748b;text-transform:uppercase}
+.tooltip-wrap .tooltip .tt-section{border-top:1px solid #1e293b;padding-top:6px;margin-top:6px}
+.tooltip-wrap .tooltip .tt-tag{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:600;margin:1px}
+.tooltip-wrap .tooltip .tt-tag.amber{background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3)}
+.tooltip-wrap .tooltip .tt-tag.green{background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3)}
+.tooltip-wrap .tooltip .tt-tag.rose{background:rgba(244,67,84,0.15);color:#f43f5e;border:1px solid rgba(244,67,84,0.3)}
+.tooltip-wrap .tooltip .tt-tag.indigo{background:rgba(99,102,241,0.15);color:#818cf8;border:1px solid rgba(99,102,241,0.3)}
+/* Mini sparkline bars */
+.tt-spark-row{display:flex;gap:2px;align-items:flex-end;height:30px;margin:6px 0}
+.tt-spark-row .bar{width:8px;border-radius:2px 2px 0 0;min-height:3px;transition:height .3s}
+.tt-spark-row .bar.green{background:#10b981}
+.tt-spark-row .bar.amber{background:#f59e0b}
+.tt-spark-row .bar.blue{background:#6366f1}
+.tt-spark-row .bar.rose{background:#f43f5e}
+/* Mini bar chart for tooltips */
+.tt-minibar{display:flex;gap:4px;align-items:center;margin:4px 0;font-size:9px}
+.tt-minibar .tt-mb-label{width:80px;text-align:right;color:#94a3b8;flex-shrink:0}
+.tt-minibar .tt-mb-track{flex:1;height:10px;background:#1e293b;border-radius:5px;overflow:hidden}
+.tt-minibar .tt-mb-fill{height:100%;border-radius:5px;transition:width .3s}
+/* Phase badge colors */
+.tt-phase{display:inline-block;padding:0 5px;border-radius:3px;font-size:8px;font-weight:700;text-transform:uppercase}
+.tt-phase.oe{background:rgba(99,102,241,0.2);color:#818cf8}
+.tt-phase.mc{background:rgba(245,158,11,0.2);color:#fbbf24}
+.tt-phase.pb{background:rgba(16,185,129,0.2);color:#34d399}
+
 .tt-spark{display:flex;gap:2px;align-items:end;height:24px;margin:6px 0}
 .tt-spark .bar{width:6px;border-radius:2px 2px 0 0;background:#6366f1;min-height:2px}
 .tt-spark .bar.green{background:#10b981}
@@ -456,7 +641,7 @@ function rp(){
     var pg = g.filter(function(gl){return ''+gl.p===''+p.id;});
     var cd=document.createElement('div');
     cd.className='bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden';
-    cd.innerHTML='<div class="p-3 sm:p-4 cursor-pointer flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 hover:bg-slate-700/20" onclick="tp('+i+')">'+
+    cd.innerHTML='<div class="p-3 sm:p-4 cursor-pointer flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 hover:bg-slate-700/20 tooltip-wrap" onclick="tp('+i+')" data-tt="pulse:'+i+':header">'+
       '<div class="flex items-center gap-3"><span class="px-2 py-1 bg-indigo-500/10 text-indigo-400 text-xs font-bold rounded-full border border-indigo-500/20">#'+p.id+'</span>'+
       '<div><div class="text-sm font-semibold text-slate-200">'+(p.type||'Pulse')+'</div>'+
       '<div class="text-[10px] text-slate-500 font-mono">'+(p.ts_start?.substring(11,19)||'')+'</div></div></div>'+
@@ -465,23 +650,23 @@ function rp(){
       '<span class="text-xs text-slate-400 arrow">&#x25BC;</span></div></div>'+
       '<div class="hide border-t border-slate-700/50 p-3 sm:p-4 bg-slate-900/40" id="pd'+i+'">'+
       '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">'+
-      '<div class="bg-slate-800/60 rounded-lg p-2 text-center"><div class="text-xs font-bold text-emerald-400">'+(p.approved||0)+'</div><div class="text-[9px] text-slate-400">Approved</div></div>'+
-      '<div class="bg-slate-800/60 rounded-lg p-2 text-center"><div class="text-xs font-bold text-indigo-400">'+pg.length+'</div><div class="text-[9px] text-slate-400">Goals</div></div>'+
-      '<div class="bg-slate-800/60 rounded-lg p-2 text-center"><div class="text-xs font-bold text-amber-400">'+(p.implementation_count||0)+'</div><div class="text-[9px] text-slate-400">Impl</div></div>'+
-      '<div class="bg-slate-800/60 rounded-lg p-2 text-center"><div class="text-xs font-bold text-purple-400">'+(p.avg_confidence||'')+'</div><div class="text-[9px] text-slate-400">Conf</div></div></div>'+
+      '<div class="bg-slate-800/60 rounded-lg p-2 text-center tooltip-wrap" data-tt="pstat:'+i+':approved"><div class="text-xs font-bold text-emerald-400">'+(p.approved||0)+'</div><div class="text-[9px] text-slate-400">Approved</div></div>'+
+      '<div class="bg-slate-800/60 rounded-lg p-2 text-center tooltip-wrap" data-tt="pstat:'+i+':goals"><div class="text-xs font-bold text-indigo-400">'+pg.length+'</div><div class="text-[9px] text-slate-400">Goals</div></div>'+
+      '<div class="bg-slate-800/60 rounded-lg p-2 text-center tooltip-wrap" data-tt="pstat:'+i+':impl"><div class="text-xs font-bold text-amber-400">'+(p.implementation_count||0)+'</div><div class="text-[9px] text-slate-400">Impl</div></div>'+
+      '<div class="bg-slate-800/60 rounded-lg p-2 text-center tooltip-wrap" data-tt="pstat:'+i+':conf"><div class="text-xs font-bold text-purple-400">'+(p.avg_confidence||'')+'</div><div class="text-[9px] text-slate-400">Conf</div></div></div>'+
       (ps?'<div class="border-t border-slate-700/40 pt-3"><div class="grid grid-cols-5 gap-2">'+
-      '<div class="bg-slate-800/60 rounded p-2 text-center"><div class="text-[9px] text-slate-400">Rate</div><div class="text-xs font-bold text-emerald-400">'+(ps.success_rate*100).toFixed(1)+'%</div></div>'+
-      '<div class="bg-slate-800/60 rounded p-2 text-center"><div class="text-[9px] text-slate-400">Imps</div><div class="text-xs font-bold">'+(ps.total_improvements||0)+'</div></div>'+
-      '<div class="bg-slate-800/60 rounded p-2 text-center"><div class="text-[9px] text-slate-400">OK</div><div class="text-xs font-bold text-emerald-400">'+(ps.successful||0)+'</div></div>'+
-      '<div class="bg-slate-800/60 rounded p-2 text-center"><div class="text-[9px] text-slate-400">Cyc</div><div class="text-xs font-bold">'+(ps.cycle_count||0)+'</div></div>'+
-      '<div class="bg-slate-800/60 rounded p-2 text-center"><div class="text-[9px] text-slate-400">Layers</div><div class="text-xs font-bold text-indigo-400">'+(ps.scores?Object.keys(ps.scores).length:'0')+'</div></div></div></div>':'')+
+      '<div class="bg-slate-800/60 rounded p-2 text-center tooltip-wrap" data-tt="ppre:'+i+':rate"><div class="text-[9px] text-slate-400">Rate</div><div class="text-xs font-bold text-emerald-400">'+(ps.success_rate*100).toFixed(1)+'%</div></div>'+
+      '<div class="bg-slate-800/60 rounded p-2 text-center tooltip-wrap" data-tt="ppre:'+i+':imps"><div class="text-[9px] text-slate-400">Imps</div><div class="text-xs font-bold">'+(ps.total_improvements||0)+'</div></div>'+
+      '<div class="bg-slate-800/60 rounded p-2 text-center tooltip-wrap" data-tt="ppre:'+i+':ok"><div class="text-[9px] text-slate-400">OK</div><div class="text-xs font-bold text-emerald-400">'+(ps.successful||0)+'</div></div>'+
+      '<div class="bg-slate-800/60 rounded p-2 text-center tooltip-wrap" data-tt="ppre:'+i+':cyc"><div class="text-[9px] text-slate-400">Cyc</div><div class="text-xs font-bold">'+(ps.cycle_count||0)+'</div></div>'+
+      '<div class="bg-slate-800/60 rounded p-2 text-center tooltip-wrap" data-tt="ppre:'+i+':layers"><div class="text-[9px] text-slate-400">Layers</div><div class="text-xs font-bold text-indigo-400">'+(ps.scores?Object.keys(ps.scores).length:'0')+'</div></div></div></div>':'')+
       (pg.length?'<div class="border-t border-slate-700/40 pt-3"><h4 class="text-xs font-bold text-slate-400 uppercase mb-3">Goals &amp; Conversations</h4><div class="space-y-3">'+
       pg.map(function(gl,gj){
         var cv=gl.conversation||[];
         var cn=gl.constraints||{};
         var cnk=Object.keys(cn);
         var decCol=gl.dec==='PASS'?'text-emerald-400':gl.dec==='FAIL'?'text-rose-400':'text-amber-400';
-        return '<div class="bg-slate-800/60 rounded-lg border border-slate-700/40 overflow-hidden">'+
+        return '<div class="bg-slate-800/60 rounded-lg border border-slate-700/40 overflow-hidden tooltip-wrap" data-tt="pgoal:'+i+':'+gj+'">'+
           '<div class="p-3 cursor-pointer hover:bg-slate-700/20" onclick="tg(\' + i + '-' + gj + \')">'+
           '<div class="flex items-center justify-between gap-2"><div class="flex items-center gap-2 flex-1">'+
           '<span class="px-1.5 py-0.5 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold rounded border border-indigo-500/20">#'+(gl.p||'?')+'.'+(gj+1)+'</span>'+
@@ -495,10 +680,10 @@ function rp(){
           (gl.func?'<span class="bg-slate-800 px-2 py-0.5 rounded">'+gl.func+'</span>':'')+'</div>':'')+
           (cnk.length?'<div class="flex flex-wrap gap-1.5">'+cnk.map(function(k){
             var v=cn[k];
-            return '<span class="px-1.5 py-0.5 text-[9px] rounded '+(v==='LOCKED'?'bg-amber-500/15 text-amber-400 border border-amber-500/20':'bg-slate-800 text-slate-400')+'">'+k+(v==='LOCKED'?' 🔒':'')+'</span>';
+            return '<span class="px-1.5 py-0.5 text-[9px] rounded tooltip-wrap" data-tt="pconst:'+k+' '+(v==='LOCKED'?'bg-amber-500/15 text-amber-400 border border-amber-500/20':'bg-slate-800 text-slate-400')+'">'+k+(v==='LOCKED'?' 🔒':'')+'</span>';
           }).join('')+'</div>':'')+
           (cv.length?'<div class="space-y-2 max-h-[400px] overflow-y-auto border-t border-slate-700/30 pt-3">'+
-          cv.map(function(e,ei){return '<div class="bg-slate-800/40 rounded-lg p-2.5 border border-slate-700/30"><div class="text-[9px] text-slate-500 font-mono mb-1">#'+(ei+1)+(e.r?' (R'+e.r+')':'')+' <span class="text-indigo-400/60">'+((e.phase==='open_ended'?'OE':e.phase==='multi_choice'?'MC':e.phase==='probing'?'PB':e.phase||'?'))+'</span></div>'+
+          cv.map(function(e,ei){return '<div class="bg-slate-800/40 rounded-lg p-2.5 border border-slate-700/30 tooltip-wrap" data-tt="pconv:'+i+':'+gj+':'+ei+'"><div class="text-[9px] text-slate-500 font-mono mb-1">#'+(ei+1)+(e.r?' (R'+e.r+')':'')+' <span class="text-indigo-400/60">'+((e.phase==='open_ended'?'OE':e.phase==='multi_choice'?'MC':e.phase==='probing'?'PB':e.phase||'?'))+'</span></div>'+
           (e.q?'<div class="text-[11px] text-slate-300 mb-1" style="overflow-wrap:break-word"><span class="text-indigo-400 font-bold">Q:</span> '+fa(e.q)+'</div>':'')+
           (e.a!==undefined&&e.a!==null&&e.a!==''?'<div class="text-[11px] text-slate-400" style="overflow-wrap:break-word"><span class="text-emerald-400 font-bold">A:</span> '+fa(e.a)+'</div>':'')+'</div>';}).join('')+
           '</div>':'<div class="text-[10px] text-slate-500 italic border-t border-slate-700/30 pt-2">No RRP conversation recorded for this goal.</div>')+
