@@ -111,22 +111,18 @@ body{background:#0f172a;color:#e2e8f0;font-family:ui-sans-serif,system-ui,sans-s
 
 <!-- GRAPHS TAB -->
 <div class="tab-body hide" id="b-graphs">
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4">
-    <div class="grid grid-cols-2 gap-2 sm:gap-3">
-    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-2 sm:p-3 tooltip-wrap" data-tt="graph:c1"><h3 class="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase mb-1">Decision</h3><canvas id="c1" class="pie-small"></canvas></div>
-    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-2 sm:p-3 tooltip-wrap" data-tt="graph:c11"><h3 class="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase mb-1">Goal Type</h3><canvas id="c11" class="pie-small"></canvas></div>
-    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-2 sm:p-3 tooltip-wrap" data-tt="graph:c12"><h3 class="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase mb-1">Constraints</h3><canvas id="c12" class="pie-small"></canvas></div>
-    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-2 sm:p-3 tooltip-wrap" data-tt="graph:c13"><h3 class="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase mb-1">Pulse Type</h3><canvas id="c13" class="pie-small"></canvas></div>
-    </div>
+  <div class="space-y-4">
+    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c1"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Mini Charts</h3><div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div class="bg-slate-800/80 rounded-lg p-2 text-center tooltip-wrap" data-tt="graph:c1"><h4 class="text-[10px] font-bold text-slate-400 uppercase mb-1">Decision</h4><canvas id="c1" class="pie-small"></canvas></div>
+      <div class="bg-slate-800/80 rounded-lg p-2 text-center tooltip-wrap" data-tt="graph:c11"><h4 class="text-[10px] font-bold text-slate-400 uppercase mb-1">Goal Type</h4><canvas id="c11" class="pie-small"></canvas></div>
+      <div class="bg-slate-800/80 rounded-lg p-2 text-center tooltip-wrap" data-tt="graph:c12"><h4 class="text-[10px] font-bold text-slate-400 uppercase mb-1">Constraints</h4><canvas id="c12" class="pie-small"></canvas></div>
+      <div class="bg-slate-800/80 rounded-lg p-2 text-center tooltip-wrap" data-tt="graph:c13"><h4 class="text-[10px] font-bold text-slate-400 uppercase mb-1">Pulse Type</h4><canvas id="c13" class="pie-small"></canvas></div>
+    </div></div>
     <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c2"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Success Rate</h3><canvas id="c2"></canvas></div>
     <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c3"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Duration</h3><canvas id="c3"></canvas></div>
-  </div>
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
     <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c4"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Confidence</h3><canvas id="c4"></canvas></div>
     <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c6"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Goals Per Pulse</h3><canvas id="c6"></canvas></div>
-  </div>
-  <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 mb-4 tooltip-wrap" data-tt="graph:c5"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Layer Scores</h3><canvas id="c5"></canvas></div>
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c5"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Layer Scores</h3><canvas id="c5"></canvas></div>
     <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c7"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Constraints</h3><canvas id="c7"></canvas></div>
     <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 tooltip-wrap" data-tt="graph:c8"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Score Radar</h3><canvas id="c8"></canvas></div>
   </div>
@@ -476,7 +472,7 @@ function getConstraintInfo(name){
 }
 
 function getGraphInfo(name){
-  var d={'c1':'Pie chart: PASS/FAIL/HOLD decision distribution.'+'c11':'Goal type distribution (implementation vs improvement).'+'c12':'Constraint lock state (locked vs optional).'+'c13':'Pulse type distribution across different RRP configurations.'+,'c2':'Line chart: success rate trend per pulse.','c3':'Bar chart: pulse duration.','c4':'Line chart: evaluator confidence trend.','c5':'Multi-line: all 9 layer scores.','c6':'Stacked bar: goals vs approved per pulse.','c7':'Horizontal bar: constraint frequency by type.','c8':'Radar: latest layer scores.','c9':'Pie: constraint distribution.','c10':'Horizontal bar: constraint lock rate.','c11':'Pie: goal type distribution.','c12':'Pie: constraint lock vs optional.','c13':'Pie: pulse type distribution.'};
+  var d={'c1':'Pie chart: PASS/FAIL/HOLD decision distribution.','c11':'Goal type distribution.','c12':'Constraint lock vs optional.','c13':'Pulse type distribution.','c2':'Line chart: success rate trend per pulse.','c3':'Bar chart: pulse duration.','c4':'Line chart: evaluator confidence trend.','c5':'Multi-line: all 9 layer scores.','c6':'Stacked bar: goals vs approved per pulse.','c7':'Horizontal bar: constraint frequency by type.','c8':'Radar: latest layer scores.','c9':'Pie: constraint distribution.','c10':'Horizontal bar: constraint lock rate.','c11':'Pie: goal type distribution.','c12':'Pie: constraint lock vs optional.','c13':'Pie: pulse type distribution.'};
   return '<h4>Chart '+name.toUpperCase()+'</h4><p>'+(d[name]||'Telemetry chart.')+'</p>';
 }
 
