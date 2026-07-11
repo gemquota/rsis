@@ -1,0 +1,6 @@
+{
+  "title": "RSIS Telemetry Dashboard",
+  "description": "Real-time telemetry dashboard for the Recursive Self-Improvement System. Tracks 20 pulses, 77 goals, layer scores, RRP conversations, constraint analysis, and knowledge graph visualization across 9 architectural layers.",
+  "category": "Developer Tools",
+  "icon": "icon.svg"
+}

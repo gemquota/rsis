@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RSIS Telemetry Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+body{background:#0f172a;color:#e2e8f0;font-family:ui-sans-serif,system-ui,sans-serif}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:#1e293b;border-radius:4px}
+::-webkit-scrollbar-thumb{background:#334155;border-radius:4px}
+.loading{display:flex;align-items:center;justify-content:center;min-height:100vh}
+.spinner{width:40px;height:40px;border:4px solid #334155;border-top-color:#6366f1;border-radius:50%;animation:s .8s linear infinite}
+@keyframes s{to{transform:rotate(360deg)}}
+.tab-body.hide{display:none}
+.arrow.rot{transform:rotate(180deg)}
+</style>
+</head>
+<body>
+<div id="load" class="loading"><div class="spinner"></div></div>
+<div id="app" class="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6" style="display:none">
+
+<!-- TAB BAR -->
+<div class="flex flex-wrap gap-1 sm:gap-2 mb-4 sm:mb-6 border-b border-slate-700/50 pb-2">
+  <button class="tb px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg bg-indigo-500 text-white shadow" data-t="overview">Overview</button>
+  <button class="tb px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-700/40" data-t="goals">Goals</button>
+  <button class="tb px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-700/40" data-t="pulses">Pulses</button>
+  <button class="tb px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-700/40" data-t="kg">KG</button>
+  <button class="tb px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-700/40" data-t="graphs">Graphs</button>
+  <button class="tb px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-700/40" data-t="conv">Conversation</button>
+  <button class="tb px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-700/40" data-t="constraints">Constraints</button>
+</div>
+
+<!-- OVERVIEW TAB -->
+<div class="tab-body" id="b-overview">
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4 sm:p-5 mb-4">
+    <div>
+      <div class="flex items-center gap-2 mb-0.5">
+        <span class="px-2 py-0.5 bg-indigo-500/15 text-indigo-400 text-[10px] sm:text-xs font-bold rounded-full uppercase border border-indigo-500/25">RSIS</span>
+        <h1 class="text-lg sm:text-2xl font-bold">Telemetry Dashboard</h1>
+      </div>
+      <p class="text-xs sm:text-sm text-slate-400/80">20 pulses &middot; 77 goals &middot; 37 improvements</p>
+    </div>
+    <div class="grid grid-cols-5 gap-2 w-full sm:w-auto">
+      <div class="bg-slate-800/80 p-2 sm:p-3 rounded-xl border border-slate-700/60 text-center"><div class="text-base sm:text-lg font-bold text-emerald-400">77</div><div class="text-[8px] sm:text-[10px] text-slate-400 font-semibold uppercase">Passed</div></div>
+      <div class="bg-slate-800/80 p-2 sm:p-3 rounded-xl border border-slate-700/60 text-center"><div class="text-base sm:text-lg font-bold text-rose-400">0</div><div class="text-[8px] sm:text-[10px] text-slate-400 font-semibold uppercase">Failed</div></div>
+      <div class="bg-slate-800/80 p-2 sm:p-3 rounded-xl border border-slate-700/60 text-center"><div class="text-base sm:text-lg font-bold text-amber-400">0</div><div class="text-[8px] sm:text-[10px] text-slate-400 font-semibold uppercase">Held</div></div>
+      <div class="bg-slate-800/80 p-2 sm:p-3 rounded-xl border border-slate-700/60 text-center"><div class="text-base sm:text-lg font-bold text-purple-400">77</div><div class="text-[8px] sm:text-[10px] text-slate-400 font-semibold uppercase">Total</div></div>
+      <div class="bg-slate-800/80 p-2 sm:p-3 rounded-xl border border-slate-700/60 text-center"><div class="text-base sm:text-lg font-bold text-indigo-400">20</div><div class="text-[8px] sm:text-[10px] text-slate-400 font-semibold uppercase">Pulses</div></div>
+    </div>
+  </div>
+  <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-3 sm:p-4 mb-4">
+    <div class="flex justify-between mb-1.5"><div class="text-xs sm:text-sm font-semibold text-slate-300">Overall Success Rate</div><div class="text-xs sm:text-sm font-bold text-emerald-400">77/77 (100.0%)</div></div>
+    <div class="h-2.5 sm:h-3 bg-slate-700 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full" style="width:100.0%"></div></div>
+  </div>
+  <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-3 sm:p-4 mb-4">
+    <div class="flex justify-between mb-3"><h2 class="text-sm sm:text-base font-bold text-slate-200">Layer Scores</h2><span class="text-[10px] sm:text-xs text-slate-400">Latest</span></div>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3" id="layers"></div>
+  </div>
+</div>
+
+<!-- GOALS TAB -->
+<div class="tab-body hide" id="b-goals">
+  <div class="flex flex-col sm:flex-row gap-2 mb-3">
+    <input id="gs" type="text" placeholder="Search goals..." class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder-slate-500" oninput="fl()"/>
+    <select id="gf" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200" onchange="fl()"><option value="">All</option><option value="PASS">PASS</option><option value="FAIL">FAIL</option><option value="HOLD">HOLD</option></select>
+    <span class="text-xs text-slate-400 self-center" id="gc"></span>
+  </div>
+  <div id="gl" class="space-y-2"></div>
+</div>
+
+<!-- PULSES TAB -->
+<div class="tab-body hide" id="b-pulses"><div id="pl" class="space-y-2"></div></div>
+
+<!-- KG TAB -->
+<div class="tab-body hide" id="b-kg">
+  <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4">
+    <h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Knowledge Graph</h3>
+    <canvas id="kgC" class="w-full" style="height:500px"></canvas>
+    <div class="flex flex-wrap gap-2 mt-3">
+      <button class="text-xs bg-slate-700 px-3 py-1.5 rounded-lg hover:bg-slate-600" onclick="ak('force')">Force</button>
+      <button class="text-xs bg-slate-700 px-3 py-1.5 rounded-lg hover:bg-slate-600" onclick="ak('radial')">Radial</button>
+      <button class="text-xs bg-slate-700 px-3 py-1.5 rounded-lg hover:bg-slate-600" onclick="ak('grid')">Grid</button>
+    </div>
+  </div>
+</div>
+
+<!-- GRAPHS TAB -->
+<div class="tab-body hide" id="b-graphs">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4">
+    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Decision Dist</h3><canvas id="c1"></canvas></div>
+    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Success Rate</h3><canvas id="c2"></canvas></div>
+    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Duration</h3><canvas id="c3"></canvas></div>
+  </div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
+    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Confidence</h3><canvas id="c4"></canvas></div>
+    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Layer Scores</h3><canvas id="c5"></canvas></div>
+  </div>
+  <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 mb-4"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Goals Per Pulse</h3><canvas id="c6"></canvas></div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Constraints</h3><canvas id="c7"></canvas></div>
+    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Score Radar</h3><canvas id="c8"></canvas></div>
+  </div>
+</div>
+
+<!-- CONVERSATION TAB -->
+<div class="tab-body hide" id="b-conv">
+  <div class="flex gap-2 mb-3">
+    <select id="cpf" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200" onchange="rc()"><option value="">All Pulses</option></select>
+    <span class="text-xs text-slate-400 self-center" id="cc"></span>
+  </div>
+  <div id="cl" class="space-y-3"></div>
+</div>
+
+<!-- CONSTRAINTS TAB -->
+<div class="tab-body hide" id="b-constraints">
+  <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 mb-4">
+    <h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Constraint Frequency & Lock Rate</h3>
+    <div id="cbd" class="space-y-3"></div>
+  </div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Constraint Dist</h3><canvas id="c9"></canvas></div>
+    <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4"><h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Lock Rate</h3><canvas id="c10"></canvas></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+var AD,PD,g,pu,sh,ch={};
+
+fetch('data.json').then(function(r){return r.json()}).then(function(d){
+  AD=d.all_data;PD=d.pulse_data||{};g=AD.goals||[];pu=AD.pulses||[];sh=AD.score_history||{};
+  document.getElementById('load').style.display='none';
+  document.getElementById('app').style.display='block';
+  renderAll();
+}).catch(function(e){document.getElementById('load').innerHTML='<div class="text-red-400 text-center mt-10">Error: '+e.message+'</div>';});
+
+function renderAll(){ly();rg();rp();rc();rcb();bk();ic();pf();sw('overview');}
+
+function sw(n){
+  document.querySelectorAll('.tb').forEach(function(t){
+    t.classList.remove('bg-indigo-500','text-white','shadow');
+    t.classList.add('text-slate-400','hover:text-slate-200','hover:bg-slate-700/40');
+  });
+  document.querySelectorAll('.tb[data-t="'+n+'"]').forEach(function(t){
+    t.classList.add('bg-indigo-500','text-white','shadow');
+  });
+  document.querySelectorAll('.tab-body').forEach(function(b){b.classList.add('hide');});
+  var el=document.getElementById('b-'+n);
+  if(el)el.classList.remove('hide');
+}
+
+function fa(a){
+  if(!a&&a!==0)return'';
+  if(typeof a==='string')return a;
+  if(typeof a==='object'){try{return JSON.stringify(a);}catch(e){return String(a);}}
+  return String(a);
+}
+
+function ly(){
+  var ks=Object.keys(sh).filter(function(k){return sh[k]&&Object.keys(sh[k]).length>0;});
+  var lk=ks.pop(),sc=lk?sh[lk]:{},el=document.getElementById('layers');
+  if(!el)return;
+  el.innerHTML='';
+  var ls=['L1','L2','L3','L4','L5','L6','L7','L8','L9'],cs=['#10b981','#6366f1','#f59e0b','#ec4899','#8b5cf6','#14b8a6','#f97316','#06b6d4','#84cc16'],nm=['Execution','Planning','Self-Direction','Optimizer','Evolution','Identity','Meta-Cog','Meta-Meta','MMM'];
+  for(var i=0;i<ls.length;i++){var l=ls[i],v=sc[l]||0;
+    el.innerHTML+='<div class="bg-slate-900/40 rounded-lg p-2.5 sm:p-3 border border-slate-700/30">'+
+      '<div class="flex justify-between mb-1"><span class="text-xs sm:text-sm font-bold text-slate-200">'+l+' <span class="text-[10px] text-slate-400 font-normal">'+nm[i]+'</span></span>'+
+      '<span class="text-xs font-mono font-bold" style="color:'+cs[i]+'">'+v.toFixed(1)+'</span></div>'+
+      '<div class="h-2 bg-slate-700 rounded-full"><div class="h-full rounded-full" style="width:'+v+'%;background:'+cs[i]+'"></div></div></div>';
+  }
+}
+
+function rg(){
+  var el=document.getElementById('gl');if(!el)return;el.innerHTML='';
+  for(var i=0;i<g.length;i++){var x=g[i];
+    var dc=x.dec==='PASS'?'text-emerald-400 bg-emerald-400/10 border-emerald-400/20':x.dec==='FAIL'?'text-rose-400 bg-rose-400/10 border-rose-400/20':'text-amber-400 bg-amber-400/10 border-amber-400/20';
+    var cv=x.conversation||[];
+    var cd=document.createElement('div');
+    cd.className='bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden';
+    cd.innerHTML='<div class="p-3 sm:p-4 cursor-pointer flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 hover:bg-slate-700/20" onclick="tg('+i+')">'+
+      '<div class="flex-1"><div class="flex gap-2 flex-wrap mb-1"><span class="px-1.5 py-0.5 bg-slate-900 font-mono text-[10px] font-bold rounded text-slate-400">P'+x.p+'</span>'+
+      '<span class="'+dc+' px-2 py-0.5 text-[10px] font-semibold rounded-full border">'+x.dec+'</span>'+
+      '<span class="text-[10px] text-slate-500 font-mono">'+(x.conf||'')+'</span></div>'+
+      '<p class="text-xs sm:text-sm text-slate-100" style="overflow-wrap:break-word">'+x.d+'</p>'+
+      '<div class="flex gap-2 mt-1 text-[10px] font-mono text-slate-500"><span>'+(x.file||'')+'</span>'+(x.func?' &middot; '+x.func:'')+(x.type?' &middot; '+x.type:'')+'</div></div>'+
+      '<span class="text-xs text-slate-400 arrow">&#x25BC;</span></div>'+
+      '<div class="hide border-t border-slate-700/50 p-3 sm:p-4 bg-slate-900/40 space-y-3" id="gd'+i+'">'+
+      '<div class="grid grid-cols-1 md:grid-cols-2 gap-3"><div><h4 class="text-[10px] font-bold text-slate-400 uppercase mb-2">Constraints</h4>'+
+      (x.constraints?Object.keys(x.constraints).map(function(n){var t=x.constraints[n];var c=t==='REQUIRED'||t==='LOCKED'?'bg-amber-500/10 text-amber-400 border-amber-500/30':t==='RECOMMENDED'?'bg-blue-500/10 text-blue-400 border-blue-500/30':'bg-slate-800 text-slate-400 border-slate-700';return '<span class="px-2 py-0.5 rounded text-[10px] font-mono border '+c+'">'+n+' <span class="text-[8px] opacity-70">'+t+'</span></span>';}).join(''):'<span class="text-[11px] text-slate-500">None</span>')+
+      '</div><div><h4 class="text-[10px] font-bold text-slate-400 uppercase mb-2">Details</h4>'+
+      '<div class="text-xs text-slate-400 space-y-1"><div>Decision: <strong class="text-slate-200">'+x.dec+'</strong></div>'+
+      '<div>Confidence: <strong class="text-slate-200">'+(x.conf||'')+'</strong></div>'+
+      '<div>Pulse: <strong class="text-slate-200">#'+x.p+'</strong></div>'+
+      (cv.length?'<div>Exchanges: <strong class="text-slate-200">'+cv.length+'</strong></div>':'')+
+      '</div></div></div>'+
+      (cv.length?'<div class="border-t border-slate-700/40 pt-3"><h4 class="text-[10px] font-bold text-slate-400 uppercase mb-2">RRP Conversation</h4><div class="space-y-2 max-h-[300px] overflow-y-auto">'+
+      cv.map(function(e,ci){return '<div class="bg-slate-800/60 rounded-lg p-2 border border-slate-700/30"><div class="text-[10px] text-slate-500 font-mono mb-1">'+(ci+1)+(e.r?' (R'+e.r+')':'')+'</div>'+
+      (e.q?'<div class="text-[11px] text-slate-300 mb-1" style="overflow-wrap:break-word"><span class="text-indigo-400 font-bold">Q:</span> '+fa(e.q)+'</div>':'')+
+      (e.a!==undefined&&e.a!==null&&e.a!==''?'<div class="text-[11px] text-slate-400" style="overflow-wrap:break-word"><span class="text-emerald-400 font-bold">A:</span> '+fa(e.a)+'</div>':'')+'</div>';}).join('')+
+      '</div></div>':'')+
+      '</div>';
+    el.appendChild(cd);
+  }
+  document.getElementById('gc').textContent=g.length+' goals';
+}
+
+function tg(i){
+  var e=document.getElementById('gd'+i);
+  if(e)e.classList.toggle('hide');
+}
+
+function fl(){
+  var q=document.getElementById('gs').value.toLowerCase();
+  var d=document.getElementById('gf').value;
+  var cards=document.querySelectorAll('#gl > div');var c=0;
+  for(var i=0;i<cards.length;i++){
+    var txt=cards[i].querySelector('p')?.textContent||'';
+    var bdg=cards[i].querySelector('.font-semibold')?.textContent||'';
+    var mq=!q||txt.toLowerCase().indexOf(q)>-1;
+    var md=!d||bdg.indexOf(d)>-1;
+    cards[i].style.display=(mq&&md)?'':'none';
+    if(mq&&md)c++;
+  }
+  document.getElementById('gc').textContent=c+'/'+g.length+' goals';
+}
+
+function rp(){
+  var el=document.getElementById('pl');if(!el)return;el.innerHTML='';
+  for(var i=0;i<pu.length;i++){var p=pu[i];
+    var pid=(''+p.id).padStart(3,'0'),hd=PD[pid],ps=hd&&hd.pre_state;
+    var cd=document.createElement('div');
+    cd.className='bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden';
+    cd.innerHTML='<div class="p-3 sm:p-4 cursor-pointer flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 hover:bg-slate-700/20" onclick="tp('+i+')">'+
+      '<div class="flex items-center gap-3"><span class="px-2 py-1 bg-indigo-500/10 text-indigo-400 text-xs font-bold rounded-full border border-indigo-500/20">#'+p.id+'</span>'+
+      '<div><div class="text-sm font-semibold text-slate-200">'+(p.type||'Pulse')+'</div>'+
+      '<div class="text-[10px] text-slate-500 font-mono">'+(p.ts_start?.substring(11,19)||'')+'</div></div></div>'+
+      '<div class="flex items-center gap-3"><span class="text-[10px] text-slate-400">'+(p.goals_count||0)+'g</span>'+
+      '<span class="text-[10px] text-emerald-400 font-mono">'+(p.duration||'?')+'s</span>'+
+      '<span class="text-xs text-slate-400 arrow">&#x25BC;</span></div></div>'+
+      '<div class="hide border-t border-slate-700/50 p-3 sm:p-4 bg-slate-900/40" id="pd'+i+'">'+
+      '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">'+
+      '<div class="bg-slate-800/60 rounded-lg p-2 text-center"><div class="text-xs font-bold text-emerald-400">'+(p.approved||0)+'</div><div class="text-[9px] text-slate-400">Approved</div></div>'+
+      '<div class="bg-slate-800/60 rounded-lg p-2 text-center"><div class="text-xs font-bold text-indigo-400">'+(p.goals_count||0)+'</div><div class="text-[9px] text-slate-400">Goals</div></div>'+
+      '<div class="bg-slate-800/60 rounded-lg p-2 text-center"><div class="text-xs font-bold text-amber-400">'+(p.implementation_count||0)+'</div><div class="text-[9px] text-slate-400">Impl</div></div>'+
+      '<div class="bg-slate-800/60 rounded-lg p-2 text-center"><div class="text-xs font-bold text-purple-400">'+(p.avg_confidence||'')+'</div><div class="text-[9px] text-slate-400">Conf</div></div></div>'+
+      (ps?'<div class="border-t border-slate-700/40 pt-3"><div class="grid grid-cols-5 gap-2">'+
+      '<div class="bg-slate-800/60 rounded p-2 text-center"><div class="text-[9px] text-slate-400">Rate</div><div class="text-xs font-bold text-emerald-400">'+(ps.success_rate*100).toFixed(1)+'%</div></div>'+
+      '<div class="bg-slate-800/60 rounded p-2 text-center"><div class="text-[9px] text-slate-400">Imps</div><div class="text-xs font-bold">'+(ps.total_improvements||0)+'</div></div>'+
+      '<div class="bg-slate-800/60 rounded p-2 text-center"><div class="text-[9px] text-slate-400">OK</div><div class="text-xs font-bold text-emerald-400">'+(ps.successful||0)+'</div></div>'+
+      '<div class="bg-slate-800/60 rounded p-2 text-center"><div class="text-[9px] text-slate-400">Cyc</div><div class="text-xs font-bold">'+(ps.cycle_count||0)+'</div></div>'+
+      '<div class="bg-slate-800/60 rounded p-2 text-center"><div class="text-[9px] text-slate-400">Layers</div><div class="text-xs font-bold text-indigo-400">'+(ps.scores?Object.keys(ps.scores).length:'0')+'</div></div></div></div>':'')+
+      '</div>';
+    el.appendChild(cd);
+  }
+}
+
+function tp(i){
+  var e=document.getElementById('pd'+i);
+  if(e)e.classList.toggle('hide');
+}
+
+function rc(){
+  var pf=document.getElementById('cpf').value;
+  var el=document.getElementById('cl');if(!el)return;el.innerHTML='';
+  var f=[];
+  for(var i=0;i<g.length;i++){var c=g[i].conversation||[];if(c.length>0&&(!pf||''+g[i].p===pf))f.push(g[i]);}
+  document.getElementById('cc').textContent=f.length+' conversations';
+  for(var fi=0;fi<f.length;fi++){var g2=f[fi],c2=g2.conversation||[];
+    var d=document.createElement('div');
+    d.className='bg-slate-800/60 border border-slate-700/50 rounded-xl p-3 sm:p-4';
+    d.innerHTML='<div class="flex items-center gap-2 mb-2"><span class="px-1.5 py-0.5 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold rounded border border-indigo-500/20">P'+g2.p+'</span>'+
+      '<span class="text-xs text-slate-200" style="overflow-wrap:break-word">'+g2.d.substring(0,80)+(g2.d.length>80?'...':'')+'</span></div>'+
+      '<div class="space-y-2 max-h-[500px] overflow-y-auto">'+
+      c2.map(function(e,ci){return '<div class="bg-slate-900/40 rounded-lg p-2.5 border border-slate-700/30"><div class="text-[10px] text-slate-500 font-mono mb-1">#'+(ci+1)+(e.r?' (R'+e.r+')':'')+'</div>'+
+      (e.q?'<div class="text-xs text-slate-300 mb-1" style="overflow-wrap:break-word"><span class="text-indigo-400 font-bold">Q:</span> '+fa(e.q)+'</div>':'')+
+      (e.a!==undefined&&e.a!==null&&e.a!==''?'<div class="text-xs text-slate-400" style="overflow-wrap:break-word"><span class="text-emerald-400 font-bold">A:</span> '+fa(e.a)+'</div>':'')+'</div>';}).join('')+
+      '</div>';
+    el.appendChild(d);
+  }
+}
+
+function rcb(){
+  var cd=(AD.summary&&AD.summary.cd)||{};
+  var el=document.getElementById('cbd');if(!el)return;el.innerHTML='';
+  for(var n in cd){var d=cd[n],lr=d.freq>0?((d.locked/d.freq)*100).toFixed(1):0;
+    el.innerHTML+='<div class="bg-slate-900/40 rounded-lg p-3 border border-slate-700/30">'+
+      '<div class="flex justify-between mb-1"><span class="text-xs sm:text-sm font-bold text-slate-200">'+n+'</span><span class="text-xs font-mono">'+d.locked+'/'+d.freq+' ('+lr+'%)</span></div>'+
+      '<div class="h-2 bg-slate-700 rounded-full"><div class="h-full bg-gradient-to-r from-amber-500 to-rose-400 rounded-full" style="width:'+lr+'%"></div></div></div>';
+  }
+}
+
+var kn=[];
+function bk(){
+  kn=[];for(var i=0;i<g.length;i++){var x=g[i];
+    kn.push({id:'g'+i,label:x.d.substring(0,25)+'..',color:x.dec==='PASS'?'#10b981':x.dec==='FAIL'?'#f43f5e':'#f59e0b',x:50+Math.random()*700,y:50+Math.random()*400,r:4+Math.random()*5});}
+  rk();
+}
+function rk(){
+  var ca=document.getElementById('kgC');if(!ca)return;
+  var ctx=ca.getContext('2d'),rect=ca.parentElement.getBoundingClientRect();
+  ca.width=Math.min(rect.width-48,1000);ca.height=500;
+  ctx.clearRect(0,0,ca.width,ca.height);
+  ctx.strokeStyle='#334155';ctx.lineWidth=0.5;
+  for(var i=0;i<kn.length;i++)for(var j=i+1;j<kn.length;j++){if(Math.abs(i-j)<3){ctx.beginPath();ctx.moveTo(kn[i].x,kn[i].y);ctx.lineTo(kn[j].x,kn[j].y);ctx.stroke();}}
+  for(var ni=0;ni<kn.length;ni++){var n=kn[ni];
+    ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,Math.PI*2);ctx.fillStyle=n.color;ctx.shadowColor=n.color;ctx.shadowBlur=8;ctx.fill();ctx.shadowBlur=0;
+    ctx.fillStyle='#94a3b8';ctx.font='7px monospace';ctx.fillText(n.label,n.x+n.r+3,n.y+3);}
+}
+function ak(l){
+  var ca=document.getElementById('kgC');var w=ca?ca.width:800;var h=500;
+  for(var i=0;i<kn.length;i++){var n=kn[i];
+    if(l==='radial'){var a=(2*Math.PI*i)/kn.length;var r=Math.min(w,h)*0.35;n.x=w/2+r*Math.cos(a);n.y=h/2+r*Math.sin(a);}
+    else if(l==='grid'){var c=Math.ceil(Math.sqrt(kn.length));n.x=(w/(c+1))*(1+(i%c));n.y=(h/(Math.ceil(kn.length/c)+1))*(1+Math.floor(i/c));}
+    else{n.x=50+Math.random()*(w-100);n.y=50+Math.random()*(h-100);}
+  }
+  rk();
+}
+
+function ic(){
+  var c1=document.getElementById('c1');if(c1){var p=0,f=0,h=0;g.forEach(function(x){if(x.dec==='PASS')p++;else if(x.dec==='FAIL')f++;else h++;});
+    ch.c1=new Chart(c1,{type:'doughnut',data:{labels:['Passed','Failed','Held'],datasets:[{data:[p,f,h],backgroundColor:['#10b981','#f43f5e','#f59e0b'],borderWidth:2}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#94a3b8',font:{size:10}}}}}});}
+  var c2=document.getElementById('c2');if(c2){ch.c2=new Chart(c2,{type:'line',data:{labels:pu.map(function(p){return '#'+p.id;}),datasets:[{label:'Success %',data:pu.map(function(p){return p.goals_count>0?(p.approved/p.goals_count*100):0;}),borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.1)',fill:true,tension:0.3}]},options:{responsive:true,plugins:{legend:{labels:{color:'#94a3b8',font:{size:10}}}},scales:{x:{ticks:{color:'#64748b'}},y:{ticks:{color:'#64748b'},beginAtZero:true,max:100}}}});}
+  var c3=document.getElementById('c3');if(c3){ch.c3=new Chart(c3,{type:'bar',data:{labels:pu.map(function(p){return '#'+p.id;}),datasets:[{label:'Duration(s)',data:pu.map(function(p){return p.duration||0;}),backgroundColor:'#6366f1'}]},options:{responsive:true,plugins:{legend:{labels:{color:'#94a3b8',font:{size:10}}}},scales:{x:{ticks:{color:'#64748b'}},y:{ticks:{color:'#64748b'}}}}});}
+  var c4=document.getElementById('c4');if(c4){ch.c4=new Chart(c4,{type:'line',data:{labels:pu.map(function(p){return '#'+p.id;}),datasets:[{label:'Confidence %',data:pu.map(function(p){return(p.avg_confidence||0)*100;}),borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,0.1)',fill:true,tension:0.3}]},options:{responsive:true,plugins:{legend:{labels:{color:'#94a3b8',font:{size:10}}}},scales:{x:{ticks:{color:'#64748b'}},y:{ticks:{color:'#64748b'},beginAtZero:true,max:100}}}});}
+  var c5=document.getElementById('c5');if(c5){var vk=Object.keys(sh).filter(function(k){return sh[k]&&Object.keys(sh[k]).length>0;});var ly=['L1','L2','L3','L4','L5','L6','L7','L8','L9'];var co=['#10b981','#6366f1','#f59e0b','#ec4899','#8b5cf6','#14b8a6','#f97316','#06b6d4','#84cc16'];
+    ch.c5=new Chart(c5,{type:'line',data:{labels:vk.map(function(k){return 'P'+k;}),datasets:ly.map(function(l,i){return{label:l,data:vk.map(function(k){return sh[k][l]||null;}),borderColor:co[i],backgroundColor:co[i]+'20',tension:0.3,pointRadius:2,borderWidth:1.5};})},options:{responsive:true,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'bottom',labels:{color:'#94a3b8',font:{size:9}}}},scales:{x:{ticks:{color:'#64748b',font:{size:8}}},y:{ticks:{color:'#64748b',font:{size:9}},beginAtZero:true,max:100}}}});}
+  var c6=document.getElementById('c6');if(c6){ch.c6=new Chart(c6,{type:'bar',data:{labels:pu.map(function(p){return '#'+p.id;}),datasets:[{label:'Total',data:pu.map(function(p){return p.goals_count||0;}),backgroundColor:'#6366f180'},{label:'Approved',data:pu.map(function(p){return p.approved||0;}),backgroundColor:'#10b98180'}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#94a3b8',font:{size:10}}}}}});}
+  var c7=document.getElementById('c7');if(c7&&AD.summary&&AD.summary.cd){var cd=AD.summary.cd,cn=Object.keys(cd);
+    ch.c7=new Chart(c7,{type:'bar',data:{labels:cn,datasets:[{label:'Total',data:cn.map(function(n){return cd[n].freq;}),backgroundColor:'#6366f180'},{label:'Locked',data:cn.map(function(n){return cd[n].locked;}),backgroundColor:'#f59e0b80'}]},options:{responsive:true,indexAxis:'y',plugins:{legend:{labels:{color:'#94a3b8',font:{size:10}}}},scales:{x:{ticks:{color:'#64748b'}},y:{ticks:{color:'#64748b'}}}}});}
+  var c8=document.getElementById('c8');if(c8){var vk2=Object.keys(sh).filter(function(k){return sh[k]&&Object.keys(sh[k]).length>0;});var lk=vk2[vk2.length-1]||'1',ls=sh[lk]||{};
+    ch.c8=new Chart(c8,{type:'radar',data:{labels:['L1','L2','L3','L4','L5','L6','L7','L8','L9'],datasets:[{label:'Latest',data:['L1','L2','L3','L4','L5','L6','L7','L8','L9'].map(function(l){return ls[l]||0;}),backgroundColor:'rgba(99,102,241,0.2)',borderColor:'#6366f1',pointBackgroundColor:'#6366f1',pointRadius:4}]},options:{responsive:true,plugins:{legend:{labels:{color:'#94a3b8',font:{size:10}}}},scales:{r:{ticks:{color:'#64748b',backdropColor:'transparent'},grid:{color:'#334155'},beginAtZero:true,max:100}}}});}
+  var c9=document.getElementById('c9');if(c9&&AD.summary&&AD.summary.cd){var cd2=AD.summary.cd,cn2=Object.keys(cd2);
+    ch.c9=new Chart(c9,{type:'pie',data:{labels:cn2,datasets:[{data:cn2.map(function(n){return cd2[n].freq;}),backgroundColor:['#6366f1','#10b981','#f59e0b','#ec4899','#8b5cf6','#14b8a6','#f97316','#06b6d4','#84cc16','#f43f5e']}]},options:{plugins:{legend:{position:'bottom',labels:{color:'#94a3b8',font:{size:9}}}}}});}
+  var c10=document.getElementById('c10');if(c10&&AD.summary&&AD.summary.cd){var cd3=AD.summary.cd,cn3=Object.keys(cd3),rt=cn3.map(function(n){return cd3[n].freq>0?(cd3[n].locked/cd3[n].freq*100):0;}),rc=rt.map(function(r){return r>80?'#f43f5e':r>50?'#f59e0b':'#10b981';});
+    ch.c10=new Chart(c10,{type:'bar',data:{labels:cn3,datasets:[{label:'Lock %',data:rt,backgroundColor:rc}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#64748b'},beginAtZero:true,max:100},y:{ticks:{color:'#64748b'}}}}});}
+}
+
+function pf(){
+  var el=document.getElementById('cpf');if(!el)return;
+  var seen={};for(var i=0;i<g.length;i++){var c=g[i].conversation||[];if(c.length>0)seen[''+g[i].p]=true;}
+  Object.keys(seen).sort(function(a,b){return parseInt(a)-parseInt(b);}).forEach(function(p){var o=document.createElement('option');o.value=p;o.textContent='Pulse #'+p;el.appendChild(o);});
+}
+</script>
+</body>
+</html>
